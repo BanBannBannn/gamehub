@@ -38,7 +38,7 @@ export function MoveHistory() {
       </div>
       <div 
         ref={scrollRef}
-        className="flex max-h-32 flex-col gap-1 overflow-y-auto p-2 text-sm sm:max-h-48"
+        className="flex max-h-[250px] sm:max-h-[400px] lg:max-h-[500px] flex-col overflow-y-auto p-2 text-sm"
       >
         {pairs.map((pair, idx) => (
           <div key={idx} className="flex rounded-md px-2 py-1 hover:bg-surface-hover">

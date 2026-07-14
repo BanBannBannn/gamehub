@@ -175,8 +175,8 @@ export function ChessGame() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
-      <div className="flex w-full max-w-[500px] items-center justify-between">
+    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto">
+      <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between">
         <div className="flex gap-4">
           <button
             onClick={handleQuit}
@@ -200,16 +200,27 @@ export function ChessGame() {
       </div>
 
       {!isOnline && (
-        <div className="flex items-center gap-2 rounded-full bg-surface-hover px-3 py-1.5 text-xs text-muted">
-          <WifiOff size={14} />
-          Đang chơi offline
+        <div className="flex w-full max-w-[500px] lg:max-w-[820px]">
+          <div className="flex items-center gap-2 rounded-full bg-surface-hover px-3 py-1.5 text-xs text-muted w-max">
+            <WifiOff size={14} />
+            Đang chơi offline
+          </div>
         </div>
       )}
       
-      <div className="w-full max-w-[500px] flex flex-col items-center gap-4">
+      <div className="flex w-full max-w-[500px] lg:max-w-[820px] flex-col gap-4">
         <Hud />
-        <Board />
-        <MoveHistory />
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 w-full">
+          {/* Left: Board */}
+          <div className="w-full max-w-[500px]">
+            <Board />
+          </div>
+
+          {/* Right: Move History (Aligned perfectly with Board) */}
+          <div className="w-full lg:w-[296px]">
+            <MoveHistory />
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>
