@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb } from "lucide-react";
 
 export default function Home() {
   return (
@@ -60,6 +60,14 @@ export default function Home() {
               description="Điền số 1-9 sao cho không trùng hàng, cột và khối 3x3. Có gợi ý thông minh."
               icon={<Grid3x3 size={22} />}
               accent="#f2b84b"
+              badge="Mới"
+            />
+            <GameCard
+              href="/games/minesweeper"
+              title="Dò mìn"
+              description="Suy luận logic để mở hết ô an toàn, tránh xa những quả mìn."
+              icon={<Bomb size={22} />}
+              accent="#e8615c"
               badge="Mới"
             />
             <GameCard

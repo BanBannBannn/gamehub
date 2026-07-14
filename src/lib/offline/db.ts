@@ -26,7 +26,19 @@ export interface CaroSaveState {
   updatedAt: number;
 }
 
-export type AnySaveState = SudokuSaveState | CaroSaveState;
+export interface MinesweeperSaveState {
+  gameSlug: "minesweeper";
+  board: import("@/games/minesweeper/engine/types").Board;
+  config: import("@/games/minesweeper/engine/types").BoardConfig;
+  difficulty: import("@/games/minesweeper/engine/types").Difficulty;
+  status: "idle" | "playing" | "won" | "lost";
+  firstClickDone: boolean;
+  hintsUsed: number;
+  elapsedSeconds: number;
+  updatedAt: number;
+}
+
+export type AnySaveState = SudokuSaveState | CaroSaveState | MinesweeperSaveState;
 
 export interface PendingSession {
   id: string;
@@ -100,6 +112,22 @@ export async function loadCaroProgress(): Promise<CaroSaveState | undefined> {
 export async function clearCaroProgress(): Promise<void> {
   const db = await getDB();
   await db.delete("saves", "caro");
+}
+
+export async function saveMinesweeperProgress(state: MinesweeperSaveState): Promise<void> {
+  const db = await getDB();
+  await db.put("saves", state, "minesweeper");
+}
+
+export async function loadMinesweeperProgress(): Promise<MinesweeperSaveState | undefined> {
+  const db = await getDB();
+  const result = await db.get("saves", "minesweeper");
+  return result?.gameSlug === "minesweeper" ? result : undefined;
+}
+
+export async function clearMinesweeperProgress(): Promise<void> {
+  const db = await getDB();
+  await db.delete("saves", "minesweeper");
 }
 
 export async function queuePendingSession(session: PendingSession): Promise<void> {
