@@ -10,10 +10,11 @@ interface GameCardProps {
   icon: React.ReactNode;
   accent: string;
   badge?: string;
+  tag?: string;
   comingSoon?: boolean;
 }
 
-export function GameCard({ href, title, description, icon, accent, badge, comingSoon }: GameCardProps) {
+export function GameCard({ href, title, description, icon, accent, badge, tag, comingSoon }: GameCardProps) {
   const content = (
     <motion.div
       whileHover={comingSoon ? undefined : { y: -4 }}
@@ -23,11 +24,18 @@ export function GameCard({ href, title, description, icon, accent, badge, coming
           : "border-border-hover bg-surface-hover/60 hover:border-amber-400/60"
       }`}
     >
-      {badge && !comingSoon && (
-        <span className="absolute right-4 top-4 rounded-full bg-teal-400/15 px-2.5 py-0.5 text-xs font-medium text-teal-400">
-          {badge}
-        </span>
-      )}
+      <div className="absolute right-4 top-4 flex gap-2">
+        {tag && (
+          <span className="rounded-full bg-border px-2.5 py-0.5 text-xs font-medium text-muted">
+            {tag}
+          </span>
+        )}
+        {badge && !comingSoon && (
+          <span className="rounded-full bg-teal-400/15 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+            {badge}
+          </span>
+        )}
+      </div>
       <div>
         <span
           className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
