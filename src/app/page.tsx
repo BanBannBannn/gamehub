@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club } from "lucide-react";
 
 export default function Home() {
   return (
@@ -77,6 +77,32 @@ export default function Home() {
                   icon={<Grid2x2 size={22} />}
                   accent="#4fd1c5"
                   tag="Cờ"
+                />
+              </div>
+            </div>
+
+            {/* Game Bài */}
+            <div>
+              <h3 className="mb-4 font-display text-xl font-semibold text-foreground flex items-center gap-2">
+                <span className="text-coral-500">🃏</span> Card Games (Game Bài)
+              </h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <GameCard
+                  title="Tiến lên miền Nam"
+                  description="Game bài quen thuộc của người Việt. Sắp ra mắt chế độ đánh với máy."
+                  icon={<Spade size={22} />}
+                  accent="#e8615c"
+                  tag="Bài"
+                  comingSoon
+                />
+                <GameCard
+                  href="/games/solitaire"
+                  title="Solitaire"
+                  description="Xếp bài cổ điển rèn luyện tính kiên nhẫn. Thử thách tài chiến lược của bạn."
+                  icon={<Club size={22} />}
+                  accent="#f2b84b"
+                  badge="Mới"
+                  tag="Bài"
                 />
               </div>
             </div>

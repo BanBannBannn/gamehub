@@ -63,7 +63,20 @@ export interface DoansoSaveState {
   updatedAt: number;
 }
 
-export type AnySaveState = SudokuSaveState | CaroSaveState | MinesweeperSaveState | ChessSaveState | DoansoSaveState;
+export interface SolitaireSaveState {
+  gameSlug: "solitaire";
+  stock: any[];
+  waste: any[];
+  foundations: any[][];
+  tableaus: any[][];
+  history: any[];
+  status: "playing" | "won";
+  moves: number;
+  elapsedSeconds: number;
+  updatedAt: number;
+}
+
+export type AnySaveState = SudokuSaveState | CaroSaveState | MinesweeperSaveState | ChessSaveState | DoansoSaveState | SolitaireSaveState;
 
 export interface PendingSession {
   id: string;
@@ -185,6 +198,22 @@ export async function loadDoansoProgress(): Promise<DoansoSaveState | undefined>
 export async function clearDoansoProgress(): Promise<void> {
   const db = await getDB();
   await db.delete("saves", "doanso");
+}
+
+export async function saveSolitaireProgress(state: SolitaireSaveState): Promise<void> {
+  const db = await getDB();
+  await db.put("saves", state, "solitaire");
+}
+
+export async function loadSolitaireProgress(): Promise<SolitaireSaveState | undefined> {
+  const db = await getDB();
+  const result = await db.get("saves", "solitaire");
+  return result?.gameSlug === "solitaire" ? result : undefined;
+}
+
+export async function clearSolitaireProgress(): Promise<void> {
+  const db = await getDB();
+  await db.delete("saves", "solitaire");
 }
 
 export async function queuePendingSession(session: PendingSession): Promise<void> {
