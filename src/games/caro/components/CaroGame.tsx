@@ -7,14 +7,10 @@ import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { WinModal } from "./WinModal";
 import { ModeAndDifficultyPicker } from "./ModeAndDifficultyPicker";
-import {
-  loadCaroProgress,
-  saveCaroProgress,
-  clearCaroProgress,
-  queuePendingSession,
-} from "@/lib/offline/db";
+import Link from "next/link";
+import { loadCaroProgress, saveCaroProgress, clearCaroProgress, queuePendingSession } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
-import { WifiOff } from "lucide-react";
+import { WifiOff, ArrowLeft, X } from "lucide-react";
 
 export function CaroGame() {
   const [ready, setReady] = useState(false);
@@ -162,6 +158,14 @@ export function CaroGame() {
     setHasGame(false);
   }
 
+  function handleQuitGame() {
+    if (confirm("Bạn có chắc muốn thoát ván game này? Tiến trình chưa lưu sẽ bị xoá.")) {
+      hasQueuedCompletion.current = false;
+      setHasGame(false);
+      void clearCaroProgress();
+    }
+  }
+
   if (!ready) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -172,7 +176,10 @@ export function CaroGame() {
 
   if (!hasGame) {
     return (
-      <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
+        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
+          <ArrowLeft size={16} /> Quay lại trang chủ
+        </Link>
         <ModeAndDifficultyPicker onStart={handleStart} />
       </div>
     );
@@ -180,8 +187,21 @@ export function CaroGame() {
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
+      <div className="flex w-full max-w-[min(92vw,560px)] items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
+          <ArrowLeft size={16} /> Trang chủ
+        </Link>
+        <button
+          type="button"
+          onClick={handleQuitGame}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-coral-500 transition hover:bg-surface-hover"
+        >
+          <X size={16} /> Kết thúc sớm
+        </button>
+      </div>
+
       {!isOnline && (
-        <div className="flex items-center gap-2 rounded-full bg-ink-800 px-3 py-1.5 text-xs text-ink-400">
+        <div className="flex items-center gap-2 rounded-full bg-surface-hover px-3 py-1.5 text-xs text-muted">
           <WifiOff size={14} />
           Đang chơi offline — tiến trình sẽ đồng bộ khi có mạng trở lại
         </div>

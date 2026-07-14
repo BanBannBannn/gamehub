@@ -8,14 +8,10 @@ import { NumberPad } from "./NumberPad";
 import { Hud } from "./Hud";
 import { WinModal } from "./WinModal";
 import { DifficultyPicker } from "./DifficultyPicker";
-import {
-  loadSudokuProgress,
-  saveSudokuProgress,
-  clearSudokuProgress,
-  queuePendingSession,
-} from "@/lib/offline/db";
+import Link from "next/link";
+import { loadSudokuProgress, saveSudokuProgress, clearSudokuProgress, queuePendingSession } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
-import { WifiOff } from "lucide-react";
+import { WifiOff, ArrowLeft, X } from "lucide-react";
 
 export function SudokuGame() {
   const [ready, setReady] = useState(false);
@@ -152,6 +148,14 @@ export function SudokuGame() {
     setHasGame(false);
   }
 
+  function handleQuitGame() {
+    if (confirm("Bạn có chắc muốn thoát ván game này? Tiến trình chưa lưu sẽ bị xoá.")) {
+      hasQueuedCompletion.current = false;
+      setHasGame(false);
+      void clearSudokuProgress();
+    }
+  }
+
   if (!ready) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -162,7 +166,10 @@ export function SudokuGame() {
 
   if (!hasGame) {
     return (
-      <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
+        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
+          <ArrowLeft size={16} /> Quay lại trang chủ
+        </Link>
         <DifficultyPicker onPick={handlePick} />
       </div>
     );
@@ -170,6 +177,19 @@ export function SudokuGame() {
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
+      <div className="flex w-full max-w-[min(92vw,560px)] items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
+          <ArrowLeft size={16} /> Trang chủ
+        </Link>
+        <button
+          type="button"
+          onClick={handleQuitGame}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-coral-500 transition hover:bg-surface-hover"
+        >
+          <X size={16} /> Kết thúc sớm
+        </button>
+      </div>
+
       {!isOnline && (
         <div className="flex items-center gap-2 rounded-full bg-surface-hover px-3 py-1.5 text-xs text-muted">
           <WifiOff size={14} />
