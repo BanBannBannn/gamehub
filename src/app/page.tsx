@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Blocks, Hash } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash } from "lucide-react";
 
 export default function Home() {
   return (
@@ -63,11 +63,12 @@ export default function Home() {
               badge="Mới"
             />
             <GameCard
-              title="2048"
-              description="Ghép các ô số giống nhau để đạt điểm cao nhất."
-              icon={<Blocks size={22} />}
+              href="/games/caro"
+              title="Caro"
+              description="Cờ ca-rô 15x15 — chơi với máy hoặc rủ bạn chơi cùng."
+              icon={<Grid2x2 size={22} />}
               accent="#4fd1c5"
-              comingSoon
+              badge="Mới"
             />
             <GameCard
               title="Ô chữ"

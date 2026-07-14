@@ -13,6 +13,21 @@ export interface SudokuSaveState {
   updatedAt: number;
 }
 
+export interface CaroSaveState {
+  gameSlug: "caro";
+  board: number[]; // 0 trống, 1 = X, 2 = O
+  currentPlayer: 1 | 2;
+  mode: "ai" | "hotseat";
+  difficulty: "easy" | "medium" | "hard";
+  humanPlayer: 1 | 2;
+  movesHistory: number[];
+  hintsUsed: number;
+  elapsedSeconds: number;
+  updatedAt: number;
+}
+
+export type AnySaveState = SudokuSaveState | CaroSaveState;
+
 export interface PendingSession {
   id: string;
   gameSlug: string;
@@ -25,8 +40,8 @@ export interface PendingSession {
 
 interface GameHubDB extends DBSchema {
   saves: {
-    key: string; // e.g. "sudoku"
-    value: SudokuSaveState;
+    key: string; // e.g. "sudoku", "caro"
+    value: AnySaveState;
   };
   "pending-sessions": {
     key: string;
@@ -62,12 +77,29 @@ export async function saveSudokuProgress(state: SudokuSaveState): Promise<void> 
 
 export async function loadSudokuProgress(): Promise<SudokuSaveState | undefined> {
   const db = await getDB();
-  return db.get("saves", "sudoku");
+  const result = await db.get("saves", "sudoku");
+  return result?.gameSlug === "sudoku" ? result : undefined;
 }
 
 export async function clearSudokuProgress(): Promise<void> {
   const db = await getDB();
   await db.delete("saves", "sudoku");
+}
+
+export async function saveCaroProgress(state: CaroSaveState): Promise<void> {
+  const db = await getDB();
+  await db.put("saves", state, "caro");
+}
+
+export async function loadCaroProgress(): Promise<CaroSaveState | undefined> {
+  const db = await getDB();
+  const result = await db.get("saves", "caro");
+  return result?.gameSlug === "caro" ? result : undefined;
+}
+
+export async function clearCaroProgress(): Promise<void> {
+  const db = await getDB();
+  await db.delete("saves", "caro");
 }
 
 export async function queuePendingSession(session: PendingSession): Promise<void> {
