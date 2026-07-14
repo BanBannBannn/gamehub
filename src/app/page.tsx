@@ -112,12 +112,13 @@ export default function Home() {
                   comingSoon
                 />
                 <GameCard
+                  href="/games/doanso"
                   title="Đoán số"
                   description="Suy luận logic để tìm ra con số bí ẩn trong ít lượt nhất."
                   icon={<Hash size={22} />}
                   accent="#8b7cf6"
+                  badge="Mới"
                   tag="Logic"
-                  comingSoon
                 />
               </div>
             </div>
