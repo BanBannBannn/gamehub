@@ -11,9 +11,11 @@ import Link from "next/link";
 import { loadCaroProgress, saveCaroProgress, clearCaroProgress, queuePendingSession } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
 import { WifiOff, ArrowLeft, X } from "lucide-react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function CaroGame() {
   const [ready, setReady] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [hasGame, setHasGame] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const isOnline = useIsOnline();
@@ -158,12 +160,15 @@ export function CaroGame() {
     setHasGame(false);
   }
 
-  function handleQuitGame() {
-    if (confirm("Bạn có chắc muốn thoát ván game này? Tiến trình chưa lưu sẽ bị xoá.")) {
-      hasQueuedCompletion.current = false;
-      setHasGame(false);
-      void clearCaroProgress();
-    }
+  function handleQuitGameClick() {
+    setShowConfirm(true);
+  }
+
+  function handleConfirmQuit() {
+    setShowConfirm(false);
+    hasQueuedCompletion.current = false;
+    setHasGame(false);
+    void clearCaroProgress();
   }
 
   if (!ready) {
@@ -193,7 +198,7 @@ export function CaroGame() {
         </Link>
         <button
           type="button"
-          onClick={handleQuitGame}
+          onClick={handleQuitGameClick}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-coral-500 transition hover:bg-surface-hover"
         >
           <X size={16} /> Kết thúc sớm
@@ -209,6 +214,14 @@ export function CaroGame() {
       <Hud />
       <Board focusedIndex={focusedIndex} />
       <WinModal onPlayAgain={handlePlayAgain} />
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Thoát ván cờ"
+        message="Bạn có chắc chắn muốn thoát ván cờ Caro hiện tại? Tiến trình chưa lưu có thể bị mất."
+        onConfirm={handleConfirmQuit}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

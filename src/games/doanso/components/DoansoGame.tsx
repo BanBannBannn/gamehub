@@ -17,9 +17,11 @@ import {
 import { useIsOnline } from "@/lib/offline/sync-provider";
 import { ArrowLeft, RotateCcw, WifiOff } from "lucide-react";
 import Link from "next/link";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function DoansoGame() {
   const [ready, setReady] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [hasGame, setHasGame] = useState(false);
   const isOnline = useIsOnline();
   const hasQueuedCompletion = useRef(false);
@@ -137,11 +139,7 @@ export function DoansoGame() {
           <ArrowLeft size={16} /> Trang chủ
         </Link>
         <button
-          onClick={() => {
-            if (confirm("Bạn có chắc muốn thoát ván này để đổi độ khó không?")) {
-              setHasGame(false);
-            }
-          }}
+          onClick={() => setShowConfirm(true)}
           className="flex items-center gap-1.5 transition hover:text-paper-100"
         >
           <RotateCcw size={16} /> Đổi độ khó
@@ -166,6 +164,17 @@ export function DoansoGame() {
       </button>
       <HistoryList />
       <WinModal onPlayAgain={handlePlayAgain} />
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Đổi độ khó"
+        message="Bạn có chắc muốn thoát ván này để đổi độ khó không? Tiến trình chưa lưu sẽ bị mất."
+        onConfirm={() => {
+          setShowConfirm(false);
+          setHasGame(false);
+        }}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

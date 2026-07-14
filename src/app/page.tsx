@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords } from "lucide-react";
 
 export default function Home() {
   return (
@@ -67,6 +67,15 @@ export default function Home() {
                   description="Môn thể thao trí tuệ với luật chơi quốc tế. Chơi 2 người trên cùng thiết bị."
                   icon={<Crown size={22} />}
                   accent="#8b7cf6"
+                  badge="Mới"
+                  tag="Cờ"
+                />
+                <GameCard
+                  href="/games/xiangqi"
+                  title="Cờ Tướng"
+                  description="Cờ Tướng truyền thống (Xiangqi). Chơi 2 người trên cùng thiết bị."
+                  icon={<Crown size={22} />}
+                  accent="#ef4444"
                   badge="Mới"
                   tag="Cờ"
                 />

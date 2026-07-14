@@ -17,9 +17,11 @@ import {
 } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
 import { WifiOff, ArrowLeft, X } from "lucide-react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function MinesweeperGame() {
   const [ready, setReady] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [hasGame, setHasGame] = useState(false);
   const isOnline = useIsOnline();
   const hasQueuedCompletion = useRef(false);
@@ -117,12 +119,15 @@ export function MinesweeperGame() {
     setHasGame(false);
   }
 
-  function handleQuitGame() {
-    if (confirm("Bạn có chắc muốn thoát ván game này? Tiến trình chưa lưu sẽ bị xoá.")) {
-      hasQueuedCompletion.current = false;
-      setHasGame(false);
-      void clearMinesweeperProgress();
-    }
+  function handleQuitGameClick() {
+    setShowConfirm(true);
+  }
+
+  function handleConfirmQuit() {
+    setShowConfirm(false);
+    hasQueuedCompletion.current = false;
+    setHasGame(false);
+    void clearMinesweeperProgress();
   }
 
   if (!ready) {
@@ -152,7 +157,7 @@ export function MinesweeperGame() {
         </Link>
         <button
           type="button"
-          onClick={handleQuitGame}
+          onClick={handleQuitGameClick}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-coral-500 transition hover:bg-surface-hover"
         >
           <X size={16} /> Kết thúc sớm
@@ -169,6 +174,14 @@ export function MinesweeperGame() {
       <Board />
       <WinModal onPlayAgain={handlePlayAgain} />
       <LoseModal onPlayAgain={handlePlayAgain} />
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Thoát ván cờ"
+        message="Bạn có chắc muốn thoát ván game Dò Mìn này? Tiến trình chưa lưu sẽ bị xoá."
+        onConfirm={handleConfirmQuit}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

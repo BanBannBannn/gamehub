@@ -76,7 +76,20 @@ export interface SolitaireSaveState {
   updatedAt: number;
 }
 
-export type AnySaveState = SudokuSaveState | CaroSaveState | MinesweeperSaveState | ChessSaveState | DoansoSaveState | SolitaireSaveState;
+export interface XiangqiSaveState {
+  gameSlug: "xiangqi";
+  board: any[][];
+  turn: "r" | "b";
+  history: string[];
+  redTime: number;
+  blackTime: number;
+  timeConfig: number;
+  status: "playing" | "won" | "draw" | "idle";
+  winner: "r" | "b" | null;
+  updatedAt: number;
+}
+
+export type AnySaveState = SudokuSaveState | CaroSaveState | MinesweeperSaveState | ChessSaveState | DoansoSaveState | SolitaireSaveState | XiangqiSaveState;
 
 export interface PendingSession {
   id: string;
@@ -214,6 +227,21 @@ export async function loadSolitaireProgress(): Promise<SolitaireSaveState | unde
 export async function clearSolitaireProgress(): Promise<void> {
   const db = await getDB();
   await db.delete("saves", "solitaire");
+}
+
+export async function saveXiangqiProgress(state: XiangqiSaveState) {
+  const db = await getDB();
+  await db.put("saves", state, "xiangqi");
+}
+
+export async function loadXiangqiProgress(): Promise<XiangqiSaveState | undefined> {
+  const db = await getDB();
+  return db.get("saves", "xiangqi") as Promise<XiangqiSaveState | undefined>;
+}
+
+export async function clearXiangqiProgress() {
+  const db = await getDB();
+  await db.delete("saves", "xiangqi");
 }
 
 export async function queuePendingSession(session: PendingSession): Promise<void> {

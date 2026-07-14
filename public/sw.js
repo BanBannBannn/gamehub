@@ -1,5 +1,5 @@
 const CACHE_NAME = "gamehub-cache-v1";
-const CORE_ASSETS = ["/", "/games/sudoku", "/games/caro", "/games/chess", "/games/doanso", "/games/solitaire", "/manifest.webmanifest"];
+const CORE_ASSETS = ["/", "/games/sudoku", "/games/caro", "/games/chess", "/games/doanso", "/games/solitaire", "/games/xiangqi", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

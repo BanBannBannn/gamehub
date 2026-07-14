@@ -38,20 +38,20 @@ export const useChessStore = create<ChessState>((set, get) => ({
   mode: "hotseat",
   autoFlip: true,
 
-  startNewGame: ({ timeSeconds, mode, autoFlip }) => {
-    const newGame = new Chess();
+  startNewGame: (config) => {
+    const time = config?.timeSeconds || 600;
     set({
-      game: newGame,
-      fen: newGame.fen(),
-      pgn: newGame.pgn(),
-      whiteTime: timeSeconds,
-      blackTime: timeSeconds,
+      game: new Chess(),
+      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      pgn: "",
+      whiteTime: time,
+      blackTime: time,
+      timeConfig: time,
       status: "playing",
       winner: null,
-      isRunning: true,
-      timeConfig: timeSeconds,
-      mode,
-      autoFlip,
+      isRunning: false, // Timer starts on first move
+      mode: config?.mode || "ai",
+      autoFlip: config?.autoFlip ?? true,
     });
   },
 
@@ -98,7 +98,7 @@ export const useChessStore = create<ChessState>((set, get) => ({
   },
 
   makeMove: (moveObj) => {
-    const { game, status, whiteTime, blackTime, mode } = get();
+    const { game, status, whiteTime, blackTime, mode, winner } = get();
     if (status !== "playing") return false;
 
     try {
@@ -116,22 +116,22 @@ export const useChessStore = create<ChessState>((set, get) => ({
         }
       }).catch(() => {});
 
-      let newStatus: ChessStatus = "playing";
-      let winner: "w" | "b" | null = null;
+      let nextStatus: ChessStatus = status;
+      let nextWinner = winner;
 
       if (game.isCheckmate()) {
-        newStatus = "won";
-        winner = game.turn() === "w" ? "b" : "w";
+        nextStatus = "won";
+        nextWinner = game.turn() === "w" ? "b" : "w";
       } else if (game.isDraw() || game.isStalemate() || game.isThreefoldRepetition() || game.isInsufficientMaterial()) {
-        newStatus = "draw";
+        nextStatus = "draw";
       }
 
       set({
         fen: game.fen(),
         pgn: game.pgn(),
-        status: newStatus,
-        winner,
-        isRunning: newStatus === "playing",
+        status: nextStatus,
+        winner: nextWinner,
+        isRunning: nextStatus === "playing" ? true : false,
       });
       return true;
     } catch (e) {
