@@ -87,7 +87,11 @@ export function ChessGame() {
 
     // It's AI's turn (Black)
     let cancelled = false;
-    setIsAiThinking(true);
+    // Dời việc setState ra khỏi phần đồng bộ của effect body (tránh
+    // cascading render ngay lập tức) — vẫn chạy gần như tức thì.
+    queueMicrotask(() => {
+      if (!cancelled) setIsAiThinking(true);
+    });
 
     stockfishEngine.getBestMove(fen, 10, (bestMove) => {
       if (!cancelled && bestMove) {

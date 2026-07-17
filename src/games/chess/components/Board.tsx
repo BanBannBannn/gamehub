@@ -1,6 +1,6 @@
 import { useChessStore } from "@/games/chess/store";
 import { Chessboard } from "react-chessboard";
-import { useCallback, useState } from "react";
+import { useCallback, useState, CSSProperties } from "react";
 import { Square } from "chess.js";
 
 export function Board() {
@@ -24,7 +24,7 @@ export function Board() {
       return;
     }
 
-    const newSquares: Record<string, any> = {};
+    const newSquares: Record<string, CSSProperties> = {};
     moves.map((move) => {
       newSquares[move.to] = {
         background:

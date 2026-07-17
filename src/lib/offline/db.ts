@@ -65,11 +65,11 @@ export interface DoansoSaveState {
 
 export interface SolitaireSaveState {
   gameSlug: "solitaire";
-  stock: any[];
-  waste: any[];
-  foundations: any[][];
-  tableaus: any[][];
-  history: any[];
+  stock: import("@/games/solitaire/engine/types").Card[];
+  waste: import("@/games/solitaire/engine/types").Card[];
+  foundations: import("@/games/solitaire/engine/types").Card[][];
+  tableaus: import("@/games/solitaire/engine/types").Card[][];
+  history: import("@/games/solitaire/engine/types").HistoryAction[];
   status: "playing" | "won";
   moves: number;
   elapsedSeconds: number;
@@ -78,7 +78,7 @@ export interface SolitaireSaveState {
 
 export interface XiangqiSaveState {
   gameSlug: "xiangqi";
-  board: any[][];
+  board: (import("@/games/xiangqi/engine/types").Piece | null)[][];
   turn: "r" | "b";
   history: string[];
   redTime: number;

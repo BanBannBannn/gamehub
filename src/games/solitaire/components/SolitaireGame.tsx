@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSolitaireStore } from "../store";
+import { useSolitaireStore, SolitaireState } from "../store";
 import { SolitaireBoard } from "./SolitaireBoard";
 import { Hud } from "./Hud";
 import { WinModal } from "./WinModal";
 import { loadSolitaireProgress, saveSolitaireProgress } from "@/lib/offline/db";
+import { Card } from "../engine/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function SolitaireGame() {
@@ -33,7 +34,7 @@ export function SolitaireGame() {
           // Validate no duplicate cards to prevent crash
           const allCardIds = new Set();
           let isCorrupt = false;
-          const checkCards = (cards: any[]) => {
+          const checkCards = (cards: Card[]) => {
             cards.forEach(c => {
               if (allCardIds.has(c.id)) isCorrupt = true;
               allCardIds.add(c.id);
@@ -45,7 +46,7 @@ export function SolitaireGame() {
           saved.tableaus.forEach(checkCards);
 
           if (hasCards && !isCorrupt) {
-            loadSavedGame(saved as any);
+            loadSavedGame(saved as Partial<SolitaireState>);
           } else {
             startNewGame();
           }

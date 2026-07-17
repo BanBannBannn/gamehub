@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useDoansoStore } from "@/games/doanso/store";
 
 export function GuessInput({ onSubmit }: { onSubmit: () => void }) {
@@ -10,6 +10,9 @@ export function GuessInput({ onSubmit }: { onSubmit: () => void }) {
   const errorMessage = useDoansoStore((s) => s.errorMessage);
   const status = useDoansoStore((s) => s.status);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // ID ổn định (an toàn với SSR) để chặn trình duyệt gợi ý autofill,
+  // thay cho Math.random() gọi trực tiếp trong render (không tinh khiết).
+  const instanceId = useId();
 
   const digits = Array.from({ length }, (_, i) => currentInput[i] ?? "");
 
@@ -82,7 +85,7 @@ export function GuessInput({ onSubmit }: { onSubmit: () => void }) {
             autoComplete="new-password"
             autoCorrect="off"
             spellCheck="false"
-            name={`guess-digit-${index}-${Math.random().toString(36).substring(7)}`}
+            name={`guess-digit-${index}-${instanceId}`}
             aria-label={`Chữ số thứ ${index + 1}`}
             className="h-12 w-10 rounded-lg border border-ink-700 bg-ink-900 text-center font-mono text-xl text-paper-100 outline-none focus:border-amber-400 disabled:opacity-50 sm:h-14 sm:w-12"
           />

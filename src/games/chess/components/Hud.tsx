@@ -1,5 +1,6 @@
 import { useChessStore } from "@/games/chess/store";
 import { Clock } from "lucide-react";
+import type { Square, PieceSymbol, Color } from "chess.js";
 
 function formatTime(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
@@ -9,7 +10,9 @@ function formatTime(totalSeconds: number): string {
 
 const INITIAL_PIECES = { p: 8, n: 2, b: 2, r: 2, q: 1 };
 
-function getCapturedPieces(board: any[][]) {
+type BoardSquare = { square: Square; type: PieceSymbol; color: Color } | null;
+
+function getCapturedPieces(board: BoardSquare[][]) {
   const current = {
     w: { p: 0, n: 0, b: 0, r: 0, q: 0 },
     b: { p: 0, n: 0, b: 0, r: 0, q: 0 }
