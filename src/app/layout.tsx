@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SyncProvider } from "@/lib/offline/sync-provider";
 import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: {
@@ -54,6 +55,13 @@ export default function RootLayout({
         <ThemeProvider>
           <SyncProvider>{children}</SyncProvider>
         </ThemeProvider>
+
+        <Script 
+          src="https://js.mbidadm.com/static/scripts.js" 
+          data-admpid="448488" 
+          strategy="afterInteractive" 
+          async
+        />
       </body>
     </html>
   );
