@@ -282,6 +282,56 @@ export async function startRematch(roomId: string, gameState: unknown, roundNumb
     .eq("id", roomId);
 }
 
+/**
+ * Ghi lại 1 dòng lịch sử cho ván vừa kết thúc (tính năng tuỳ chọn — xem
+ * `supabase/migrations/0003_round_history.sql`). Nếu bảng chưa được tạo
+ * (người dùng chưa chạy migration này), lỗi được nuốt lặng lẽ — tính
+ * năng chơi online chính vẫn hoạt động bình thường không phụ thuộc vào
+ * việc lưu lịch sử có thành công hay không.
+ */
+export async function recordRoundHistory(params: {
+  roomId: string;
+  roomCode: string;
+  gameSlug: string;
+  roundNumber: number;
+  finalGameState: unknown;
+  winnerSlot: number | null;
+  players: { slot: number; displayName: string }[];
+}): Promise<void> {
+  const supabase = createClient();
+  if (!supabase) return;
+  try {
+    await supabase.from("room_round_history").insert({
+      room_id: params.roomId,
+      room_code: params.roomCode,
+      game_slug: params.gameSlug,
+      round_number: params.roundNumber,
+      final_game_state: params.finalGameState,
+      winner_slot: params.winnerSlot,
+      players: params.players,
+    });
+  } catch {
+    // Bảng lịch sử là tính năng tuỳ chọn — bỏ qua lỗi nếu chưa migrate.
+  }
+}
+
+/** Lấy lịch sử các ván gần đây cho 1 game (tuỳ chọn — xem `recordRoundHistory`). */
+export async function listRecentRoundHistory(gameSlug: string, limit = 20) {
+  const supabase = createClient();
+  if (!supabase) return [];
+  try {
+    const { data } = await supabase
+      .from("room_round_history")
+      .select("*")
+      .eq("game_slug", gameSlug)
+      .order("finished_at", { ascending: false })
+      .limit(limit);
+    return data ?? [];
+  } catch {
+    return [];
+  }
+}
+
 /** Danh sách phòng đang chờ người (dùng cho sảnh chung / room browser). */
 export async function listOpenRooms(gameSlug?: string): Promise<Room[]> {
   const supabase = createClient();

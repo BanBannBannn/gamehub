@@ -5,7 +5,7 @@ import { useCaroStore } from "@/games/caro/store";
 import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
-import { finishRoomRound, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import { finishRoomRound, recordRoundHistory, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -120,12 +120,22 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
 
     roundFinishReportedRef.current = room.roundNumber;
     const scoreboard = { ...room.scoreboard };
+    let winnerSlot: number | null = null;
     if (winner) {
-      const winnerSlot = winner.winner === 1 ? 0 : 1;
+      winnerSlot = winner.winner === 1 ? 0 : 1;
       scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
     }
     void finishRoomRound(room.id, scoreboard);
-  }, [winner, isDraw, room, movesHistory.length, myPlayerNumber]);
+    void recordRoundHistory({
+      roomId: room.id,
+      roomCode: room.code,
+      gameSlug: "caro",
+      roundNumber: room.roundNumber,
+      finalGameState: { movesHistory } satisfies CaroGameState,
+      winnerSlot,
+      players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
+    });
+  }, [winner, isDraw, room, movesHistory.length, myPlayerNumber, players]);
 
   // Rematch: khi tất cả đã sẵn sàng ở màn kết quả, host tạo ván mới.
   useEffect(() => {
@@ -161,7 +171,7 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
-        <RoomLobby gameTitle="Caro" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+        <RoomLobby gameSlug="caro" gameTitle="Caro" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
       </div>
     );
   }

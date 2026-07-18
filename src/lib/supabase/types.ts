@@ -139,6 +139,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      room_round_history: {
+        Row: {
+          id: string;
+          room_id: string;
+          room_code: string;
+          game_slug: string;
+          round_number: number;
+          final_game_state: unknown;
+          winner_slot: number | null;
+          players: unknown;
+          finished_at: string;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          room_code: string;
+          game_slug: string;
+          round_number: number;
+          final_game_state?: unknown;
+          winner_slot?: number | null;
+          players: unknown;
+          finished_at?: string;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          room_code?: string;
+          game_slug?: string;
+          round_number?: number;
+          final_game_state?: unknown;
+          winner_slot?: number | null;
+          players?: unknown;
+          finished_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

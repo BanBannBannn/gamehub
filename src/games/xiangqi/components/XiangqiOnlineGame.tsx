@@ -7,7 +7,7 @@ import { XiangqiBoard } from "./Board";
 import { Hud } from "./Hud";
 import { MoveHistory } from "./MoveHistory";
 import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
-import { finishRoomRound, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import { finishRoomRound, recordRoundHistory, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -184,12 +184,22 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
 
     roundFinishReportedRef.current = room.roundNumber;
     const scoreboard = { ...room.scoreboard };
+    let winnerSlot: number | null = null;
     if (status === "won" && winner) {
-      const winnerSlot = winner === "r" ? 0 : 1;
+      winnerSlot = winner === "r" ? 0 : 1;
       scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
     }
     void finishRoomRound(room.id, scoreboard);
-  }, [status, winner, room, myColor, mySlot]);
+    void recordRoundHistory({
+      roomId: room.id,
+      roomCode: room.code,
+      gameSlug: "xiangqi",
+      roundNumber: room.roundNumber,
+      finalGameState: { moves: movesRef.current, redTime, blackTime } satisfies XiangqiGameState,
+      winnerSlot,
+      players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
+    });
+  }, [status, winner, room, myColor, mySlot, players, redTime, blackTime]);
 
   useEffect(() => {
     if (!room || room.status !== "round_finished") return;
@@ -231,7 +241,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
-        <RoomLobby gameTitle="Cờ tướng" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+        <RoomLobby gameSlug="xiangqi" gameTitle="Cờ tướng" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
       </div>
     );
   }

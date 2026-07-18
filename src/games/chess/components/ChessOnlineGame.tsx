@@ -6,7 +6,7 @@ import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { MoveHistory } from "./MoveHistory";
 import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
-import { finishRoomRound, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import { finishRoomRound, recordRoundHistory, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -145,12 +145,22 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
 
     roundFinishReportedRef.current = room.roundNumber;
     const scoreboard = { ...room.scoreboard };
+    let winnerSlot: number | null = null;
     if (status === "won" && winner) {
-      const winnerSlot = winner === "w" ? 0 : 1;
+      winnerSlot = winner === "w" ? 0 : 1;
       scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
     }
     void finishRoomRound(room.id, scoreboard);
-  }, [status, winner, room, myColor, mySlot]);
+    void recordRoundHistory({
+      roomId: room.id,
+      roomCode: room.code,
+      gameSlug: "chess",
+      roundNumber: room.roundNumber,
+      finalGameState: { pgn, whiteTime, blackTime } satisfies ChessGameState,
+      winnerSlot,
+      players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
+    });
+  }, [status, winner, room, myColor, mySlot, players, pgn, whiteTime, blackTime]);
 
   // Rematch khi tất cả đã sẵn sàng — host tạo ván mới.
   useEffect(() => {
@@ -194,7 +204,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
-        <RoomLobby gameTitle="Cờ vua" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+        <RoomLobby gameSlug="chess" gameTitle="Cờ vua" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
       </div>
     );
   }

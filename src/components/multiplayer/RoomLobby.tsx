@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { DoorOpen, KeyRound, Loader2 } from "lucide-react";
+import { OpenRoomsBrowser } from "./OpenRoomsBrowser";
 
 interface RoomLobbyProps {
+  gameSlug: string;
   gameTitle: string;
   isLoading: boolean;
   error: string | null;
@@ -13,7 +15,7 @@ interface RoomLobbyProps {
   onBack: () => void;
 }
 
-export function RoomLobby({ gameTitle, isLoading, error, onCreate, onJoin, onBack }: RoomLobbyProps) {
+export function RoomLobby({ gameSlug, gameTitle, isLoading, error, onCreate, onJoin, onBack }: RoomLobbyProps) {
   const [joinMode, setJoinMode] = useState(false);
   const [codeInput, setCodeInput] = useState("");
 
@@ -103,9 +105,12 @@ export function RoomLobby({ gameTitle, isLoading, error, onCreate, onJoin, onBac
       {error && <p className="text-sm text-coral-500">{error}</p>}
 
       {!joinMode && (
-        <button type="button" onClick={onBack} className="text-sm text-ink-400 hover:text-paper-100">
-          ← Chọn chế độ khác
-        </button>
+        <>
+          <OpenRoomsBrowser gameSlug={gameSlug} onJoinCode={onJoin} />
+          <button type="button" onClick={onBack} className="text-sm text-ink-400 hover:text-paper-100">
+            ← Chọn chế độ khác
+          </button>
+        </>
       )}
     </div>
   );
