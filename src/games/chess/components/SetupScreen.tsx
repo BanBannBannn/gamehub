@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useChessStore } from "@/games/chess/store";
-import { Clock, Users, Bot, RotateCcw } from "lucide-react";
+import { Clock, Users, Bot, RotateCcw, Globe } from "lucide-react";
 
-export function SetupScreen({ onStart }: { onStart: (config: { timeSeconds: number; mode: "ai" | "hotseat"; autoFlip: boolean }) => void }) {
+export function SetupScreen({
+  onStart,
+  onSelectOnline,
+}: {
+  onStart: (config: { timeSeconds: number; mode: "ai" | "hotseat"; autoFlip: boolean }) => void;
+  onSelectOnline: () => void;
+}) {
   const [mode, setMode] = useState<"ai" | "hotseat">("hotseat");
   const [time, setTime] = useState<number>(600); // default 10m
   const [autoFlip, setAutoFlip] = useState(true);
@@ -46,6 +52,14 @@ export function SetupScreen({ onStart }: { onStart: (config: { timeSeconds: numb
             </button>
           </div>
         </div>
+
+        <button
+          onClick={onSelectOnline}
+          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-amber-400/60 p-3 text-amber-500 transition hover:bg-amber-400/10"
+        >
+          <Globe size={18} />
+          <span className="text-sm font-medium">Chơi online — tạo phòng hoặc nhập mã</span>
+        </button>
 
         {/* Time Selection */}
         <div>

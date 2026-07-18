@@ -7,6 +7,7 @@ import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { WinModal } from "./WinModal";
 import { ModeAndDifficultyPicker } from "./ModeAndDifficultyPicker";
+import { CaroOnlineGame } from "./CaroOnlineGame";
 import Link from "next/link";
 import { loadCaroProgress, saveCaroProgress, clearCaroProgress, queuePendingSession } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
@@ -18,8 +19,24 @@ export function CaroGame() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [hasGame, setHasGame] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [screenMode, setScreenMode] = useState<"menu" | "local" | "online">("menu");
+  const [pendingRoomCode, setPendingRoomCode] = useState<string | undefined>(undefined);
   const isOnline = useIsOnline();
   const hasQueuedCompletion = useRef(false);
+
+  // Nếu người dùng mở link mời (?room=MÃ), tự động vào thẳng màn hình online.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("room");
+    if (!code) return;
+    // Đọc URL là tác vụ đồng bộ hợp lệ trong effect, nhưng dời việc gọi
+    // setState ra khỏi phần thân đồng bộ để tránh kích hoạt cascading
+    // render ngay lập tức (theo đúng khuyến nghị của react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      setPendingRoomCode(code);
+      setScreenMode("online");
+    });
+  }, []);
 
   const board = useCaroStore((s) => s.board);
   const currentPlayer = useCaroStore((s) => s.currentPlayer);
@@ -152,12 +169,23 @@ export function CaroGame() {
     hasQueuedCompletion.current = false;
     startNewGame(gameMode, gameDifficulty);
     setHasGame(true);
+    setScreenMode("local");
     setFocusedIndex(null);
+  }
+
+  function handleSelectOnline() {
+    setScreenMode("online");
+  }
+
+  function handleExitOnline() {
+    setScreenMode("menu");
+    setPendingRoomCode(undefined);
   }
 
   function handlePlayAgain() {
     hasQueuedCompletion.current = false;
     setHasGame(false);
+    setScreenMode("menu");
   }
 
   function handleQuitGameClick() {
@@ -168,6 +196,7 @@ export function CaroGame() {
     setShowConfirm(false);
     hasQueuedCompletion.current = false;
     setHasGame(false);
+    setScreenMode("menu");
     void clearCaroProgress();
   }
 
@@ -179,13 +208,21 @@ export function CaroGame() {
     );
   }
 
+  if (screenMode === "online") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <CaroOnlineGame initialRoomCode={pendingRoomCode} onExit={handleExitOnline} />
+      </div>
+    );
+  }
+
   if (!hasGame) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
         <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
           <ArrowLeft size={16} /> Quay lại trang chủ
         </Link>
-        <ModeAndDifficultyPicker onStart={handleStart} />
+        <ModeAndDifficultyPicker onStart={handleStart} onSelectOnline={handleSelectOnline} />
       </div>
     );
   }

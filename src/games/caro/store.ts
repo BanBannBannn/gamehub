@@ -45,6 +45,19 @@ export interface CaroState {
   undo: () => void;
   useHint: () => void;
   tick: () => void;
+
+  // --- Chế độ online (mode === "online") ---
+  /** Khởi tạo ván online mới với slot của người chơi hiện tại (0 → quân X/1, 1 → quân O/2). */
+  startOnlineGame: (mySlot: number) => void;
+  /**
+   * Ghi đè state cục bộ bằng trạng thái nhận được từ phòng (Postgres
+   * Changes). `movesHistory` được replay lại từ đầu qua `placeStone` để
+   * TỰ VALIDATE tính hợp lệ của chuỗi nước đi trước khi áp dụng — nếu
+   * chuỗi nước đi nhận được không hợp lệ (dữ liệu hỏng/giả mạo), state
+   * cục bộ được GIỮ NGUYÊN thay vì áp dụng mù quáng. Trả về true nếu áp
+   * dụng thành công.
+   */
+  syncRemoteBoard: (remote: { movesHistory: number[]; humanPlayer: 1 | 2 }) => boolean;
 }
 
 function checkGameEnd(board: Board, lastIndex: number): { winner: WinResult | null; isDraw: boolean } {
@@ -196,5 +209,58 @@ export const useCaroStore = create<CaroState>((set, get) => ({
   tick: () => {
     if (!get().isRunning) return;
     set((s) => ({ elapsedSeconds: s.elapsedSeconds + 1 }));
+  },
+
+  startOnlineGame: (mySlot) => {
+    const humanPlayer: 1 | 2 = mySlot === 0 ? 1 : 2;
+    set({
+      board: createEmptyBoard(),
+      currentPlayer: 1,
+      mode: "online",
+      difficulty: "medium", // không dùng ở chế độ online, giữ giá trị mặc định hợp lệ
+      humanPlayer,
+      movesHistory: [],
+      winner: null,
+      isDraw: false,
+      hintsUsed: 0,
+      lastHintIndex: null,
+      lastHintReason: null,
+      elapsedSeconds: 0,
+      isRunning: true,
+      isAiThinking: false,
+    });
+  },
+
+  syncRemoteBoard: (remote) => {
+    // Replay toàn bộ chuỗi nước đi từ đầu để tự validate — nếu 1 nước đi
+    // nào đó nhắm vào ô đã có quân (dữ liệu hỏng/giả mạo), dừng lại và
+    // KHÔNG áp dụng gì cả, giữ nguyên state cục bộ hiện tại.
+    let board = createEmptyBoard();
+    let player: 1 | 2 = 1;
+    for (const idx of remote.movesHistory) {
+      if (idx < 0 || idx >= board.length || board[idx] !== 0) {
+        console.warn("Nước đi nhận được từ phòng không hợp lệ, bỏ qua đồng bộ:", remote.movesHistory);
+        return false;
+      }
+      board = placeStone(board, idx, player);
+      player = otherPlayer(player);
+    }
+
+    const lastIndex = remote.movesHistory[remote.movesHistory.length - 1];
+    const { winner, isDraw } =
+      lastIndex !== undefined ? checkGameEnd(board, lastIndex) : { winner: null, isDraw: false };
+
+    set({
+      board,
+      currentPlayer: player,
+      movesHistory: remote.movesHistory,
+      humanPlayer: remote.humanPlayer,
+      winner,
+      isDraw,
+      isRunning: !winner && !isDraw,
+      lastHintIndex: null,
+      lastHintReason: null,
+    });
+    return true;
   },
 }));

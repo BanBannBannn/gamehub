@@ -5,6 +5,7 @@ import { useXiangqiStore } from "../store";
 import { XiangqiBoard } from "./Board";
 import { Hud } from "./Hud";
 import { SetupScreen } from "./SetupScreen";
+import { XiangqiOnlineGame } from "./XiangqiOnlineGame";
 import { MoveHistory } from "./MoveHistory";
 import Link from "next/link";
 import {
@@ -20,8 +21,21 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function XiangqiGame() {
   const [ready, setReady] = useState(false);
+  const [screenMode, setScreenMode] = useState<"menu" | "local" | "online">("menu");
+  const [pendingRoomCode, setPendingRoomCode] = useState<string | undefined>(undefined);
   const isOnline = useIsOnline();
   const hasQueuedCompletion = useRef(false);
+
+  // Nếu người dùng mở link mời (?room=MÃ), tự động vào thẳng màn hình online.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("room");
+    if (!code) return;
+    queueMicrotask(() => {
+      setPendingRoomCode(code);
+      setScreenMode("online");
+    });
+  }, []);
 
   const board = useXiangqiStore((s) => s.board);
   const turn = useXiangqiStore((s) => s.turn);
@@ -32,6 +46,7 @@ export function XiangqiGame() {
   const blackTime = useXiangqiStore((s) => s.blackTime);
   const isRunning = useXiangqiStore((s) => s.isRunning);
   const timeConfig = useXiangqiStore((s) => s.timeConfig);
+  const mode = useXiangqiStore((s) => s.mode);
 
   const startNewGame = useXiangqiStore((s) => s.startNewGame);
   const loadSavedGame = useXiangqiStore((s) => s.loadSavedGame);
@@ -45,7 +60,7 @@ export function XiangqiGame() {
     let cancelled = false;
     loadXiangqiProgress().then((saved) => {
       if (cancelled) return;
-      if (saved && (saved.status === "playing" || saved.status === "idle")) {
+      if (saved && saved.mode !== "online" && (saved.status === "playing" || saved.status === "idle")) {
         loadSavedGame({
           board: saved.board,
           turn: saved.turn,
@@ -72,9 +87,9 @@ export function XiangqiGame() {
     return () => clearInterval(id);
   }, [isRunning, tick]);
 
-  // Autosave
+  // Autosave (chỉ áp dụng cho ván chơi local — ván online đã đồng bộ qua Supabase, không cần lưu IndexedDB).
   useEffect(() => {
-    if (!ready || status === "idle") return;
+    if (!ready || status === "idle" || mode === "online") return;
     const id = setTimeout(() => {
       void saveXiangqiProgress({
         gameSlug: "xiangqi",
@@ -86,11 +101,12 @@ export function XiangqiGame() {
         status,
         winner,
         timeConfig,
+        mode: "hotseat",
         updatedAt: Date.now(),
       });
     }, 400);
     return () => clearTimeout(id);
-  }, [board, turn, history, redTime, blackTime, status, winner, timeConfig, ready]);
+  }, [board, turn, history, redTime, blackTime, status, winner, timeConfig, mode, ready]);
 
   // Queue session on completion
   useEffect(() => {
@@ -113,6 +129,16 @@ export function XiangqiGame() {
   function handleStart(config: { timeSeconds: number; mode: "hotseat" }) {
     hasQueuedCompletion.current = false;
     startNewGame({ timeSeconds: config.timeSeconds });
+    setScreenMode("local");
+  }
+
+  function handleSelectOnline() {
+    setScreenMode("online");
+  }
+
+  function handleExitOnline() {
+    setScreenMode("menu");
+    setPendingRoomCode(undefined);
   }
 
   function handleQuitClick() {
@@ -122,6 +148,7 @@ export function XiangqiGame() {
   function handleConfirmQuit() {
     setShowConfirm(false);
     quitGame();
+    setScreenMode("menu");
     void clearXiangqiProgress();
   }
 
@@ -133,13 +160,21 @@ export function XiangqiGame() {
     );
   }
 
+  if (screenMode === "online") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <XiangqiOnlineGame initialRoomCode={pendingRoomCode} onExit={handleExitOnline} />
+      </div>
+    );
+  }
+
   if (status === "idle") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 bg-[#F9F3E5]">
         <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
           <ArrowLeft size={16} /> Quay lại trang chủ
         </Link>
-        <SetupScreen onStart={handleStart} />
+        <SetupScreen onStart={handleStart} onSelectOnline={handleSelectOnline} />
       </div>
     );
   }

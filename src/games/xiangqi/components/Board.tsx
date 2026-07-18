@@ -9,11 +9,17 @@ export function XiangqiBoard() {
   const board = useXiangqiStore((s) => s.board);
   const turn = useXiangqiStore((s) => s.turn);
   const makeMove = useXiangqiStore((s) => s.makeMove);
+  const mode = useXiangqiStore((s) => s.mode);
+  const onlineColor = useXiangqiStore((s) => s.onlineColor);
 
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Position[]>([]);
 
+  const isMyOnlineTurn = mode !== "online" || turn === onlineColor;
+
   const handleSquareClick = (x: number, y: number) => {
+    if (!isMyOnlineTurn) return; // chưa tới lượt của mình khi chơi online
+
     const piece = board[y][x];
 
     // If we have a selected piece and we clicked a valid move target

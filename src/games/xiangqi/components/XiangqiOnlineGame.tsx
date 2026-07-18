@@ -1,0 +1,312 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useXiangqiStore } from "@/games/xiangqi/store";
+import { Position } from "@/games/xiangqi/engine/types";
+import { XiangqiBoard } from "./Board";
+import { Hud } from "./Hud";
+import { MoveHistory } from "./MoveHistory";
+import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
+import { finishRoomRound, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import { RoomLobby } from "@/components/multiplayer/RoomLobby";
+import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
+import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
+import { ChatDrawer } from "@/components/multiplayer/ChatDrawer";
+import { OpponentDisconnectedBanner } from "@/components/multiplayer/OpponentDisconnectedBanner";
+import { ArrowLeft } from "lucide-react";
+
+interface XiangqiGameState {
+  moves: { from: Position; to: Position }[];
+  redTime: number;
+  blackTime: number;
+}
+
+function isXiangqiGameState(value: unknown): value is XiangqiGameState {
+  return typeof value === "object" && value !== null && Array.isArray((value as XiangqiGameState).moves);
+}
+
+const DEFAULT_TIME_SECONDS = 600;
+
+export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: string; onExit: () => void }) {
+  const {
+    identity,
+    room,
+    players,
+    myPlayer,
+    opponents,
+    mySlot,
+    isHost,
+    chatMessages,
+    sendChat,
+    isPlayerOnline,
+    error,
+    isLoading,
+    create,
+    join,
+    leave,
+    toggleReady,
+  } = useOnlineRoom("xiangqi");
+
+  const history = useXiangqiStore((s) => s.history);
+  const redTime = useXiangqiStore((s) => s.redTime);
+  const blackTime = useXiangqiStore((s) => s.blackTime);
+  const status = useXiangqiStore((s) => s.status);
+  const winner = useXiangqiStore((s) => s.winner);
+  const isRunning = useXiangqiStore((s) => s.isRunning);
+  const startOnlineGame = useXiangqiStore((s) => s.startOnlineGame);
+  const syncRemoteState = useXiangqiStore((s) => s.syncRemoteState);
+  const tick = useXiangqiStore((s) => s.tick);
+
+  // Danh sách moves dạng {from,to} không suy ngược lại chính xác 100% từ
+  // chuỗi text "c2-c5" của `history` — theo dõi độc lập trong ref, cập
+  // nhật mỗi khi 1 nước đi mới được xác nhận hợp lệ trong local state.
+  const movesRef = useRef<{ from: Position; to: Position }[]>([]);
+  const lastHandledMoveIndexRef = useRef(0);
+
+  const autoJoinAttempted = useRef(false);
+  const initializedRoundRef = useRef<number | null>(null);
+  const lastPushedMoveCountRef = useRef(0);
+  const roundFinishReportedRef = useRef<number | null>(null);
+
+  const myColor: "r" | "b" = mySlot === 0 ? "r" : "b";
+
+  useEffect(() => {
+    if (autoJoinAttempted.current) return;
+    if (!initialRoomCode) return;
+    autoJoinAttempted.current = true;
+    void join(initialRoomCode);
+  }, [initialRoomCode, join]);
+
+  // Đếm ngược thời gian mỗi giây (để phát hiện hết giờ ở cả 2 client).
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => tick(), 1000);
+    return () => clearInterval(id);
+  }, [isRunning, tick]);
+
+  useEffect(() => {
+    if (!room || room.status !== "playing") return;
+    if (initializedRoundRef.current === room.roundNumber) return;
+    initializedRoundRef.current = room.roundNumber;
+    lastPushedMoveCountRef.current = 0;
+    movesRef.current = [];
+    lastHandledMoveIndexRef.current = 0;
+
+    startOnlineGame(myColor, DEFAULT_TIME_SECONDS);
+    if (isXiangqiGameState(room.gameState) && room.gameState.moves.length > 0) {
+      const ok = syncRemoteState(room.gameState);
+      if (ok) {
+        movesRef.current = room.gameState.moves;
+        lastPushedMoveCountRef.current = room.gameState.moves.length;
+        lastHandledMoveIndexRef.current = room.gameState.moves.length;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.status, room?.roundNumber, mySlot]);
+
+  // Nhận nước đi mới từ đối thủ.
+  useEffect(() => {
+    if (!room || room.status !== "playing") return;
+    if (!isXiangqiGameState(room.gameState)) return;
+    const remoteMoves = room.gameState.moves;
+    if (remoteMoves.length === history.length) return;
+    if (remoteMoves.length < history.length) return;
+
+    const ok = syncRemoteState(room.gameState);
+    if (ok) {
+      movesRef.current = remoteMoves;
+      lastPushedMoveCountRef.current = remoteMoves.length;
+      lastHandledMoveIndexRef.current = remoteMoves.length;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.gameState]);
+
+  function pushIfMyMove() {
+    if (!room || room.status !== "playing") return;
+    if (movesRef.current.length === lastPushedMoveCountRef.current) return;
+
+    const lastMoverColor: "r" | "b" = movesRef.current.length % 2 === 1 ? "r" : "b";
+    if (lastMoverColor !== myColor) return;
+
+    lastPushedMoveCountRef.current = movesRef.current.length;
+    void updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+    } satisfies XiangqiGameState);
+  }
+
+  // Theo dõi thay đổi board của store để suy ra nước đi cục bộ vừa xảy
+  // ra (so sánh 2 snapshot board liên tiếp: ô "from" mất quân, ô "to" đổi
+  // quân) — cách này không cần sửa lại `makeMove` gốc của engine.
+  const boardRef = useRef(useXiangqiStore.getState().board);
+  useEffect(
+    () =>
+      useXiangqiStore.subscribe((state) => {
+        if (state.mode !== "online") return;
+        const prevBoard = boardRef.current;
+        const nextBoard = state.board;
+        boardRef.current = nextBoard;
+        if (state.history.length <= lastHandledMoveIndexRef.current) return;
+
+        let from: Position | null = null;
+        let to: Position | null = null;
+        for (let y = 0; y < 10; y++) {
+          for (let x = 0; x < 9; x++) {
+            const before = prevBoard[y]?.[x];
+            const after = nextBoard[y]?.[x];
+            if (before && !after) from = { x, y };
+            if (after && before !== after) to = { x, y };
+          }
+        }
+        lastHandledMoveIndexRef.current = state.history.length;
+        if (from && to) {
+          movesRef.current = [...movesRef.current, { from, to }];
+          pushIfMyMove();
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [room?.id]
+  );
+
+  // Ghi nhận kết quả ván — bên THẮNG là người báo cáo (không phải "người
+  // vừa đi nước cuối"), để xử lý đúng cả trường hợp thắng do đối thủ hết
+  // giờ (không có nước đi nào xảy ra). Xem chú thích tương tự trong
+  // ChessOnlineGame.tsx.
+  useEffect(() => {
+    if (!room || room.status !== "playing") return;
+    const gameOver = status === "won" || status === "draw";
+    if (!gameOver) return;
+    if (roundFinishReportedRef.current === room.roundNumber) return;
+
+    const shouldIReport = status === "won" ? winner === myColor : mySlot === 0;
+    if (!shouldIReport) return;
+
+    roundFinishReportedRef.current = room.roundNumber;
+    const scoreboard = { ...room.scoreboard };
+    if (status === "won" && winner) {
+      const winnerSlot = winner === "r" ? 0 : 1;
+      scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
+    }
+    void finishRoomRound(room.id, scoreboard);
+  }, [status, winner, room, myColor, mySlot]);
+
+  useEffect(() => {
+    if (!room || room.status !== "round_finished") return;
+    if (!isHost) return;
+    if (players.length < 2) return;
+    if (!players.every((p) => p.isReady)) return;
+
+    const nextRound = room.roundNumber + 1;
+    void (async () => {
+      await startRematch(
+        room.id,
+        { moves: [], redTime: DEFAULT_TIME_SECONDS, blackTime: DEFAULT_TIME_SECONDS } satisfies XiangqiGameState,
+        nextRound
+      );
+      await resetReadyFlags(room.id);
+    })();
+  }, [room, players, isHost]);
+
+  useEffect(() => {
+    if (!room || room.status !== "waiting") return;
+    if (!isHost) return;
+    if (players.length < room.maxPlayers) return;
+    if (!players.every((p) => p.isReady)) return;
+
+    void startRoomRound(room.id, {
+      moves: [],
+      redTime: DEFAULT_TIME_SECONDS,
+      blackTime: DEFAULT_TIME_SECONDS,
+    } satisfies XiangqiGameState);
+  }, [room, players, isHost]);
+
+  if (!room) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
+        <button
+          type="button"
+          onClick={onExit}
+          className="flex items-center gap-2 self-start text-sm font-medium text-ink-400 transition hover:text-paper-100"
+        >
+          <ArrowLeft size={16} /> Quay lại chọn chế độ
+        </button>
+        <RoomLobby gameTitle="Cờ tướng" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+      </div>
+    );
+  }
+
+  if (room.status === "waiting") {
+    return (
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
+        <WaitingRoom
+          roomCode={room.code}
+          gameSlug="xiangqi"
+          players={players}
+          maxPlayers={room.maxPlayers}
+          myPlayerRowId={myPlayer?.id ?? null}
+          isPlayerOnline={isPlayerOnline}
+          onToggleReady={toggleReady}
+          onLeave={leave}
+        />
+      </div>
+    );
+  }
+
+  const opponent = opponents[0];
+  const opponentOffline = opponent ? !isPlayerOnline(opponent) : false;
+
+  if (room.status === "round_finished") {
+    const winnerSlot = status === "won" && winner ? (winner === "r" ? 0 : 1) : null;
+    const resultLabel =
+      status === "draw"
+        ? "Hoà!"
+        : winnerSlot === mySlot
+          ? "Bạn thắng!"
+          : `${players.find((p) => p.slot === winnerSlot)?.displayName ?? "Đối thủ"} thắng!`;
+
+    return (
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
+        <RoundResultPanel
+          resultLabel={resultLabel}
+          emoji={status === "draw" ? "🤝" : winnerSlot === mySlot ? "🎉" : "😵"}
+          scoreboard={room.scoreboard}
+          players={players}
+          myPlayerRowId={myPlayer?.id ?? null}
+          onToggleReady={toggleReady}
+          onLeave={leave}
+        />
+        {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto bg-[#F9F3E5] min-h-screen">
+      <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between text-sm text-muted">
+        <span>
+          Bạn: <span className="text-foreground">{myPlayer?.displayName}</span> ({myColor === "r" ? "Đỏ" : "Đen"})
+        </span>
+        <span>
+          Đối thủ: <span className="text-foreground">{opponent?.displayName ?? "..."}</span>
+        </span>
+      </div>
+
+      {opponentOffline && opponent && <OpponentDisconnectedBanner opponentName={opponent.displayName} />}
+
+      <div className="flex w-full max-w-[500px] lg:max-w-[820px] flex-col gap-4">
+        <Hud />
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 w-full">
+          <div className="w-full max-w-[500px]">
+            <XiangqiBoard />
+          </div>
+          <div className="w-full lg:w-[296px]">
+            <MoveHistory />
+          </div>
+        </div>
+      </div>
+
+      {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
+    </div>
+  );
+}

@@ -13,9 +13,10 @@ export interface ChessState {
   winner: "w" | "b" | null;
   isRunning: boolean;
   timeConfig: number; // Initial time in seconds (e.g. 600 for 10 minutes)
-  mode: "ai" | "hotseat";
+  mode: "ai" | "hotseat" | "online";
   autoFlip: boolean;
-  
+  onlineColor: "w" | "b" | null; // màu quân của mình khi mode === "online"
+
   // Actions
   startNewGame: (config: { timeSeconds: number; mode: "ai" | "hotseat"; autoFlip: boolean }) => void;
   loadSavedGame: (savedState: Partial<ChessState>) => void;
@@ -23,6 +24,17 @@ export interface ChessState {
   undoMove: () => void;
   tick: () => void;
   quitGame: () => void;
+
+  // --- Chế độ online (mode === "online") ---
+  /** Khởi tạo ván online mới, `color` là quân của người chơi hiện tại (host luôn là trắng). */
+  startOnlineGame: (color: "w" | "b", timeSeconds: number) => void;
+  /**
+   * Ghi đè state cục bộ bằng PGN nhận được từ phòng. `chess.js` tự
+   * validate cú pháp PGN khi load — nếu PGN hỏng/không hợp lệ, việc load
+   * sẽ throw và hàm này trả về false, GIỮ NGUYÊN state cục bộ hiện tại
+   * thay vì áp dụng dữ liệu hỏng.
+   */
+  syncRemoteState: (remote: { pgn: string; whiteTime: number; blackTime: number }) => boolean;
 }
 
 export const useChessStore = create<ChessState>((set, get) => ({
@@ -37,6 +49,7 @@ export const useChessStore = create<ChessState>((set, get) => ({
   timeConfig: 600,
   mode: "hotseat",
   autoFlip: true,
+  onlineColor: null,
 
   startNewGame: (config) => {
     const time = config?.timeSeconds || 600;
@@ -80,6 +93,7 @@ export const useChessStore = create<ChessState>((set, get) => ({
   undoMove: () => {
     const { game, mode, status } = get();
     if (status !== "playing") return;
+    if (mode === "online") return; // không cho lùi nước khi chơi online với người thật
 
     // Undo once
     game.undo();
@@ -159,5 +173,55 @@ export const useChessStore = create<ChessState>((set, get) => ({
         set({ blackTime: blackTime - 1 });
       }
     }
+  },
+
+  startOnlineGame: (color, timeSeconds) => {
+    set({
+      game: new Chess(),
+      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      pgn: "",
+      whiteTime: timeSeconds,
+      blackTime: timeSeconds,
+      timeConfig: timeSeconds,
+      status: "playing",
+      winner: null,
+      isRunning: false,
+      mode: "online",
+      autoFlip: false,
+      onlineColor: color,
+    });
+  },
+
+  syncRemoteState: (remote) => {
+    const newGame = new Chess();
+    try {
+      if (remote.pgn.trim().length > 0) {
+        newGame.loadPgn(remote.pgn);
+      }
+    } catch {
+      console.warn("PGN nhận được từ phòng không hợp lệ, bỏ qua đồng bộ:", remote.pgn);
+      return false;
+    }
+
+    let nextStatus: ChessStatus = "playing";
+    let nextWinner: "w" | "b" | null = null;
+    if (newGame.isCheckmate()) {
+      nextStatus = "won";
+      nextWinner = newGame.turn() === "w" ? "b" : "w";
+    } else if (newGame.isDraw() || newGame.isStalemate() || newGame.isThreefoldRepetition() || newGame.isInsufficientMaterial()) {
+      nextStatus = "draw";
+    }
+
+    set({
+      game: newGame,
+      fen: newGame.fen(),
+      pgn: remote.pgn,
+      whiteTime: remote.whiteTime,
+      blackTime: remote.blackTime,
+      status: nextStatus,
+      winner: nextWinner,
+      isRunning: nextStatus === "playing",
+    });
+    return true;
   },
 }));

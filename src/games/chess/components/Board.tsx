@@ -9,10 +9,20 @@ export function Board() {
   const status = useChessStore((s) => s.status);
   const makeMove = useChessStore((s) => s.makeMove);
   const autoFlip = useChessStore((s) => s.autoFlip);
+  const mode = useChessStore((s) => s.mode);
+  const onlineColor = useChessStore((s) => s.onlineColor);
 
   const [optionSquares, setOptionSquares] = useState({});
 
-  const boardOrientation = autoFlip && game.turn() === "b" ? "black" : "white";
+  const boardOrientation =
+    mode === "online"
+      ? onlineColor === "b"
+        ? "black"
+        : "white"
+      : autoFlip && game.turn() === "b"
+        ? "black"
+        : "white";
+  const isMyOnlineTurn = mode !== "online" || game.turn() === onlineColor;
 
   function getMoveOptions(square: string) {
     const moves = game.moves({
@@ -79,7 +89,7 @@ export function Board() {
           onSquareClick={onSquareClick}
           customSquareStyles={optionSquares}
           boardOrientation={boardOrientation}
-          arePiecesDraggable={status === "playing"}
+          arePiecesDraggable={status === "playing" && isMyOnlineTurn}
           customDarkSquareStyle={{ backgroundColor: "var(--color-slate-600)", opacity: "0.9" }} 
           customLightSquareStyle={{ backgroundColor: "var(--color-slate-200)", opacity: "0.9" }}
           animationDuration={200}

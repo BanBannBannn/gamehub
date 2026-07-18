@@ -1,7 +1,7 @@
 export type CellValue = 0 | 1 | 2; // 0 trống, 1 = X, 2 = O
 export type Board = CellValue[]; // length 225 (15x15), row-major
 export type Difficulty = "easy" | "medium" | "hard";
-export type GameMode = "ai" | "hotseat";
+export type GameMode = "ai" | "hotseat" | "online";
 
 export interface WinResult {
   winner: 1 | 2;

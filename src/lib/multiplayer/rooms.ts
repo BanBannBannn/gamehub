@@ -265,6 +265,13 @@ export async function finishRoomRound(roomId: string, scoreboard: Record<string,
     .eq("id", roomId);
 }
 
+/** Đặt lại `is_ready = false` cho toàn bộ người chơi trong phòng — gọi khi bắt đầu ván mới (rematch). */
+export async function resetReadyFlags(roomId: string): Promise<void> {
+  const supabase = createClient();
+  if (!supabase) return;
+  await supabase.from("room_players").update({ is_ready: false }).eq("room_id", roomId);
+}
+
 /** Bắt đầu ván mới (rematch) trong cùng 1 phòng — không tạo phòng/mã mới. */
 export async function startRematch(roomId: string, gameState: unknown, roundNumber: number): Promise<void> {
   const supabase = createClient();

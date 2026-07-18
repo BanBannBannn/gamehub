@@ -17,7 +17,7 @@ export interface CaroSaveState {
   gameSlug: "caro";
   board: number[]; // 0 trống, 1 = X, 2 = O
   currentPlayer: 1 | 2;
-  mode: "ai" | "hotseat";
+  mode: "ai" | "hotseat" | "online";
   difficulty: "easy" | "medium" | "hard";
   humanPlayer: 1 | 2;
   movesHistory: number[];
@@ -46,7 +46,7 @@ export interface ChessSaveState {
   blackTime: number;
   status: "idle" | "playing" | "won" | "draw";
   winner: "w" | "b" | null;
-  mode: "ai" | "hotseat";
+  mode: "ai" | "hotseat" | "online";
   autoFlip: boolean;
   timeConfig: number;
   updatedAt: number;
@@ -86,6 +86,7 @@ export interface XiangqiSaveState {
   timeConfig: number;
   status: "playing" | "won" | "draw" | "idle";
   winner: "r" | "b" | null;
+  mode: "hotseat" | "online";
   updatedAt: number;
 }
 

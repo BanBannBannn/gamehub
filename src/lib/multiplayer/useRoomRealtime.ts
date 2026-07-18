@@ -99,6 +99,11 @@ export function useRoomRealtime(roomId: string | null, identity: PlayerIdentity 
       supabase.removeChannel(presenceChannel);
       presenceChannelRef.current = null;
     };
+    // Cố tình dùng identity?.id/displayName thay vì cả object `identity`:
+    // getCurrentIdentity() có thể trả về 1 object mới mỗi lần dù giá trị
+    // bên trong không đổi — dùng cả object làm dep sẽ khiến effect kết
+    // nối lại kênh Realtime không cần thiết.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, identity?.id, identity?.displayName]);
 
   const sendChat = useCallback(

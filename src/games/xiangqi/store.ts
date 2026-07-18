@@ -10,7 +10,9 @@ export interface XiangqiState {
   status: GameStatus;
   winner: Color | null;
   history: string[]; // Chứa lịch sử nước đi dạng text đơn giản
-  
+  mode: "hotseat" | "online";
+  onlineColor: Color | null; // màu quân của mình khi mode === "online" (host luôn là "r")
+
   // Settings
   timeConfig: number; // 600s = 10 phút
   redTime: number;
@@ -24,6 +26,16 @@ export interface XiangqiState {
   undoMove: () => void;
   quitGame: () => void;
   tick: () => void;
+
+  // --- Chế độ online ---
+  startOnlineGame: (color: Color, timeSeconds: number) => void;
+  /**
+   * Ghi đè state cục bộ bằng cách replay lại toàn bộ `moves` nhận được từ
+   * phòng qua đúng `getLegalMoves` (validate từng nước đi y hệt `makeMove`
+   * cục bộ) — nếu 1 nước đi nào không hợp lệ, trả về false và GIỮ NGUYÊN
+   * state hiện tại thay vì áp dụng dữ liệu hỏng.
+   */
+  syncRemoteState: (remote: { moves: { from: Position; to: Position }[]; redTime: number; blackTime: number }) => boolean;
 }
 
 // Hàm format tọa độ để lưu history (vd: c2-c5)
@@ -48,6 +60,8 @@ export const useXiangqiStore = create<XiangqiState>((set, get) => ({
   redTime: 600,
   blackTime: 600,
   isRunning: false,
+  mode: "hotseat",
+  onlineColor: null,
 
   startNewGame: (config) => {
     boardHistory = [];
@@ -62,6 +76,8 @@ export const useXiangqiStore = create<XiangqiState>((set, get) => ({
       redTime: time,
       blackTime: time,
       isRunning: false,
+      mode: "hotseat",
+      onlineColor: null,
     });
   },
 
@@ -120,9 +136,10 @@ export const useXiangqiStore = create<XiangqiState>((set, get) => ({
   },
 
   undoMove: () => {
-    const { status, history } = get();
+    const { status, history, mode } = get();
     // Cannot undo if game is over or no moves made
     if (status !== "playing" || boardHistory.length === 0) return;
+    if (mode === "online") return; // không cho lùi nước khi chơi online với người thật
 
     const prevBoard = boardHistory.pop()!;
     
@@ -154,5 +171,69 @@ export const useXiangqiStore = create<XiangqiState>((set, get) => ({
         set({ blackTime: blackTime - 1 });
       }
     }
+  },
+
+  startOnlineGame: (color, timeSeconds) => {
+    boardHistory = [];
+    set({
+      board: createInitialBoard(),
+      turn: "r",
+      status: "playing",
+      winner: null,
+      history: [],
+      timeConfig: timeSeconds,
+      redTime: timeSeconds,
+      blackTime: timeSeconds,
+      isRunning: false,
+      mode: "online",
+      onlineColor: color,
+    });
+  },
+
+  syncRemoteState: (remote) => {
+    let board: BoardState = createInitialBoard();
+    let turn: Color = "r";
+    const historyStrs: string[] = [];
+
+    for (const mv of remote.moves) {
+      const piece = board[mv.from.y]?.[mv.from.x];
+      if (!piece || piece.color !== turn) {
+        console.warn("Nước đi nhận được từ phòng không hợp lệ (sai quân/lượt), bỏ qua đồng bộ.", mv);
+        return false;
+      }
+      const legalMoves = getLegalMoves(board, mv.from.x, mv.from.y);
+      const isLegal = legalMoves.some((m) => m.x === mv.to.x && m.y === mv.to.y);
+      if (!isLegal) {
+        console.warn("Nước đi nhận được từ phòng không hợp lệ (không đúng luật), bỏ qua đồng bộ.", mv);
+        return false;
+      }
+
+      const newBoard = board.map((r) => [...r]);
+      newBoard[mv.to.y][mv.to.x] = piece;
+      newBoard[mv.from.y][mv.from.x] = null;
+      board = newBoard;
+      historyStrs.push(formatMove(mv.from, mv.to));
+      turn = turn === "r" ? "b" : "r";
+    }
+
+    let status: GameStatus = "playing";
+    let winner: Color | null = null;
+    if (isCheckmateOrStalemate(board, turn)) {
+      status = "won";
+      winner = turn === "r" ? "b" : "r";
+    }
+
+    boardHistory = []; // không hỗ trợ undo xuyên suốt sau khi đồng bộ từ xa
+    set({
+      board,
+      turn,
+      history: historyStrs,
+      status,
+      winner,
+      redTime: remote.redTime,
+      blackTime: remote.blackTime,
+      isRunning: status === "playing",
+    });
+    return true;
   },
 }));

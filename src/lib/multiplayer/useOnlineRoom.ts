@@ -33,7 +33,9 @@ export function useOnlineRoom(gameSlug: string) {
 
   const { room, players, chatMessages, onlineIds, sendChat } = useRoomRealtime(roomId, identity);
   const myPlayerRowIdRef = useRef<string | null>(null);
-  myPlayerRowIdRef.current = myPlayerRowId;
+  useEffect(() => {
+    myPlayerRowIdRef.current = myPlayerRowId;
+  }, [myPlayerRowId]);
 
   useEffect(() => {
     getCurrentIdentity().then(setIdentity);
