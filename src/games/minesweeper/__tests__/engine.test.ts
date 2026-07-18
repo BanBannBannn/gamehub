@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { createEmptyBoard, placeMinesAvoiding, revealCell, isWin } from "../engine/board";
 import { BoardConfig } from "../engine/types";
 
