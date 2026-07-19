@@ -9,7 +9,7 @@ const NUMBER_COLORS: Record<number, string> = {
   4: "text-purple-500", // 4: Purple
   5: "text-amber-600", // 5: Maroon/Dark Red
   6: "text-teal-500", // 6: Turquoise
-  7: "text-gray-900 dark:text-gray-100", // 7: Black/White
+  7: "text-[var(--foreground)]", // 7: theo màu chữ chính của theme (đủ tương phản cả 2 chế độ)
   8: "text-gray-500", // 8: Gray
 };
 
@@ -43,7 +43,7 @@ export function Cell({
     if (cell.isMine) {
       baseClass += "bg-coral-500/30"; // Mine hit
     } else {
-      baseClass += "bg-black/10 dark:bg-black/40"; // Sunken effect
+      baseClass += "bg-[var(--surface-hover)]"; // Sunken effect
     }
   }
 

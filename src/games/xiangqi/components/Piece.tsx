@@ -34,19 +34,21 @@ export function XiangqiPiece({ piece, isSelected, onClick }: PieceProps) {
 
   return (
     <motion.div
+      onClick={onClick}
       className={`
         relative flex cursor-pointer items-center justify-center rounded-full shadow-md
-        w-[90%] h-[90%] bg-[#F5E6CC] border-[3px] 
-        ${isRed ? "border-red-600 text-red-600" : "border-ink-900 text-ink-900"}
-        ${isSelected ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-[#E3C292]" : ""}
+        w-[90%] h-[90%] bg-[var(--xq-piece-bg)] border-[3px]
+        ${isRed ? "border-[var(--xq-piece-text-red)] text-[var(--xq-piece-text-red)]" : "border-[var(--xq-piece-text-black)] text-[var(--xq-piece-text-black)]"}
+        ${isSelected ? "ring-4 ring-amber-400 ring-offset-2" : ""}
         hover:scale-105 transition-transform
       `}
+      style={isSelected ? { ["--tw-ring-offset-color" as string]: "var(--xq-piece-ring-offset)" } : undefined}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
       <div className={`
         absolute inset-1 rounded-full border border-dashed opacity-50
-        ${isRed ? "border-red-600" : "border-ink-900"}
+        ${isRed ? "border-[var(--xq-piece-text-red)]" : "border-[var(--xq-piece-text-black)]"}
       `} />
       <span className="font-serif text-2xl sm:text-3xl font-bold select-none z-10">
         {text}

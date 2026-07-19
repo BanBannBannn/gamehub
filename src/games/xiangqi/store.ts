@@ -36,6 +36,8 @@ export interface XiangqiState {
    * state hiện tại thay vì áp dụng dữ liệu hỏng.
    */
   syncRemoteState: (remote: { moves: { from: Position; to: Position }[]; redTime: number; blackTime: number }) => boolean;
+  /** Áp dụng kết quả đầu hàng hoặc cầu hoà nhận được từ phòng. */
+  applyOnlineResult: (params: { resignedColor?: Color; isDrawAgreed?: boolean }) => void;
 }
 
 // Hàm format tọa độ để lưu history (vd: c2-c5)
@@ -235,5 +237,14 @@ export const useXiangqiStore = create<XiangqiState>((set, get) => ({
       isRunning: status === "playing",
     });
     return true;
+  },
+
+  applyOnlineResult: (params) => {
+    if (params.resignedColor) {
+      const winnerColor: Color = params.resignedColor === "r" ? "b" : "r";
+      set({ status: "won", winner: winnerColor, isRunning: false });
+    } else if (params.isDrawAgreed) {
+      set({ status: "draw", winner: null, isRunning: false });
+    }
   },
 }));

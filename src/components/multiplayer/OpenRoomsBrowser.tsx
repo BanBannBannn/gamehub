@@ -45,12 +45,12 @@ export function OpenRoomsBrowser({ gameSlug, onJoinCode }: OpenRoomsBrowserProps
   return (
     <div className="w-full max-w-md">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-ink-400">Phòng đang chờ người</p>
+        <p className="text-sm font-medium text-muted">Phòng đang chờ người</p>
         <button
           type="button"
           onClick={() => void refresh()}
           aria-label="Làm mới danh sách phòng"
-          className="flex items-center gap-1 text-xs text-ink-400 hover:text-paper-100"
+          className="flex items-center gap-1 text-xs text-muted hover:text-foreground"
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           Làm mới
@@ -58,7 +58,7 @@ export function OpenRoomsBrowser({ gameSlug, onJoinCode }: OpenRoomsBrowserProps
       </div>
 
       {rooms.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-ink-700 px-4 py-6 text-center text-xs text-ink-600">
+        <p className="rounded-lg border border-dashed border-border-hover px-4 py-6 text-center text-xs text-muted">
           {loading ? "Đang tải..." : "Chưa có phòng nào đang chờ — hãy tạo phòng mới!"}
         </p>
       ) : (
@@ -68,10 +68,10 @@ export function OpenRoomsBrowser({ gameSlug, onJoinCode }: OpenRoomsBrowserProps
               key={room.id}
               type="button"
               onClick={() => onJoinCode(room.code)}
-              className="flex w-full items-center justify-between rounded-lg border border-ink-700 bg-ink-800/60 px-4 py-2.5 text-left transition hover:border-amber-400 hover:bg-ink-800"
+              className="flex w-full items-center justify-between rounded-lg border border-border-hover bg-surface px-4 py-2.5 text-left transition hover:border-amber-400 hover:bg-surface-hover"
             >
               <span className="font-mono text-sm tracking-widest text-amber-400">{room.code}</span>
-              <span className="flex items-center gap-1 text-xs text-ink-400">
+              <span className="flex items-center gap-1 text-xs text-muted">
                 <Users size={12} />
                 Tối đa {room.maxPlayers} người
               </span>

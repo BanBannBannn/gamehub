@@ -38,7 +38,7 @@ export function SetupScreen({ onStart, onSelectOnline }: SetupScreenProps) {
                 onClick={() => setTime(t.value)}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                   time === t.value
-                    ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    ? "border-amber-500 bg-amber-500/10 text-[var(--amber-accent-text)]"
                     : "border-border text-muted hover:bg-surface-hover"
                 }`}
               >
@@ -60,7 +60,7 @@ export function SetupScreen({ onStart, onSelectOnline }: SetupScreenProps) {
 
           <button
             onClick={onSelectOnline}
-            className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-amber-500/60 px-6 py-3.5 font-medium text-amber-600 dark:text-amber-400 transition hover:bg-amber-500/10"
+            className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-amber-500/60 px-6 py-3.5 font-medium text-[var(--amber-accent-text)] transition hover:bg-amber-500/10"
           >
             <Globe size={20} />
             Chơi online — tạo phòng hoặc nhập mã

@@ -1,23 +1,35 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useChessStore } from "@/games/chess/store";
 import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { MoveHistory } from "./MoveHistory";
 import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
-import { finishRoomRound, recordRoundHistory, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import {
+  finishRoomRound,
+  recordRoundHistory,
+  resetReadyFlags,
+  startRematch,
+  startRoomRound,
+  updateRoomGameState,
+} from "@/lib/multiplayer/rooms";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
 import { ChatDrawer } from "@/components/multiplayer/ChatDrawer";
 import { OpponentDisconnectedBanner } from "@/components/multiplayer/OpponentDisconnectedBanner";
+import { GameActionBar } from "@/components/multiplayer/GameActionBar";
+import { DrawOfferBanner } from "@/components/multiplayer/DrawOfferBanner";
+import { ConfirmActionModal } from "@/components/multiplayer/ConfirmActionModal";
 import { ArrowLeft } from "lucide-react";
 
 interface ChessGameState {
   pgn: string;
   whiteTime: number;
   blackTime: number;
+  drawOfferFromSlot?: number | null;
+  resignedBySlot?: number | null;
 }
 
 function isChessGameState(value: unknown): value is ChessGameState {
@@ -27,6 +39,13 @@ function isChessGameState(value: unknown): value is ChessGameState {
     typeof (value as ChessGameState).pgn === "string" &&
     typeof (value as ChessGameState).whiteTime === "number"
   );
+}
+
+function syncRoomCodeToUrl(code: string | null) {
+  const url = new URL(window.location.href);
+  if (code) url.searchParams.set("room", code);
+  else url.searchParams.delete("room");
+  window.history.replaceState({}, "", url.toString());
 }
 
 const DEFAULT_TIME_SECONDS = 600;
@@ -59,14 +78,22 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
   const isRunning = useChessStore((s) => s.isRunning);
   const startOnlineGame = useChessStore((s) => s.startOnlineGame);
   const syncRemoteState = useChessStore((s) => s.syncRemoteState);
+  const applyOnlineResult = useChessStore((s) => s.applyOnlineResult);
   const tick = useChessStore((s) => s.tick);
 
   const autoJoinAttempted = useRef(false);
   const initializedRoundRef = useRef<number | null>(null);
   const lastPushedPgnRef = useRef<string>("");
   const roundFinishReportedRef = useRef<number | null>(null);
+  const appliedResultRef = useRef<number | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"resign" | "leave" | null>(null);
 
   const myColor: "w" | "b" = mySlot === 0 ? "w" : "b";
+  const gameOver = status === "won" || status === "draw";
+  const currentGameState = isChessGameState(room?.gameState) ? room?.gameState : undefined;
+  const drawOfferFromSlot = currentGameState?.drawOfferFromSlot ?? null;
+  const iOfferedDraw = drawOfferFromSlot !== null && drawOfferFromSlot === mySlot;
+  const opponentOfferedDraw = drawOfferFromSlot !== null && drawOfferFromSlot !== mySlot;
 
   useEffect(() => {
     if (autoJoinAttempted.current) return;
@@ -75,9 +102,11 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     void join(initialRoomCode);
   }, [initialRoomCode, join]);
 
-  // Đếm ngược thời gian mỗi giây (cần thiết để phát hiện hết giờ — xem
-  // ghi chú ở effect "Ghi nhận kết quả ván" bên dưới về cách cả 2 client
-  // tự phát hiện timeout gần như đồng thời qua tick() cục bộ này).
+  useEffect(() => {
+    if (room?.code) syncRoomCodeToUrl(room.code);
+  }, [room?.code]);
+
+  // Đếm ngược thời gian mỗi giây (để phát hiện hết giờ ở cả 2 client).
   useEffect(() => {
     if (!isRunning) return;
     const id = setInterval(() => tick(), 1000);
@@ -90,6 +119,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     if (initializedRoundRef.current === room.roundNumber) return;
     initializedRoundRef.current = room.roundNumber;
     lastPushedPgnRef.current = "";
+    appliedResultRef.current = null;
 
     startOnlineGame(myColor, DEFAULT_TIME_SECONDS);
     if (isChessGameState(room.gameState) && room.gameState.pgn.trim().length > 0) {
@@ -98,6 +128,24 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.status, room?.roundNumber, mySlot]);
+
+  // Nhận đầu hàng/cầu hoà đồng ý từ đối thủ.
+  useEffect(() => {
+    if (!room || room.status !== "playing") return;
+    if (!isChessGameState(room.gameState)) return;
+    if (appliedResultRef.current === room.roundNumber) return;
+
+    const state = room.gameState;
+    if (state.resignedBySlot != null) {
+      appliedResultRef.current = room.roundNumber;
+      applyOnlineResult({ resignedColor: state.resignedBySlot === 0 ? "w" : "b" });
+    }
+    // Cố tình dùng room?.gameState/room?.roundNumber thay vì cả object
+    // `room` — tránh chạy lại effect khi `room` được tạo object mới
+    // nhưng nội dung liên quan không đổi (cùng lý do đã áp dụng ở
+    // useRoomRealtime.ts).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.gameState, room?.roundNumber, applyOnlineResult]);
 
   // Nhận nước đi mới từ đối thủ.
   useEffect(() => {
@@ -116,29 +164,30 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     if (pgn === lastPushedPgnRef.current) return;
     if (pgn.trim().length === 0) return;
 
-    // Nước đi vừa xảy ra được thực hiện bởi bên NGƯỢC với lượt hiện tại
-    // (turn đã đổi sau khi đi) — dùng chess.js turn thông qua game state
-    // cục bộ: nếu bây giờ tới lượt đối phương của tôi, nghĩa là tôi vừa đi.
     const game = useChessStore.getState().game;
     const justMovedColor: "w" | "b" = game.turn() === "w" ? "b" : "w";
     if (justMovedColor !== myColor) return; // đây là state vừa nhận từ đồng bộ, không phải nước đi của mình
 
     lastPushedPgnRef.current = pgn;
-    void updateRoomGameState(room.id, { pgn, whiteTime, blackTime } satisfies ChessGameState);
+    void updateRoomGameState(room.id, { pgn, whiteTime, blackTime, drawOfferFromSlot: null } satisfies ChessGameState);
   }, [pgn, whiteTime, blackTime, room, myColor]);
 
-  // Ghi nhận kết quả ván khi kết thúc — QUY TẮC: bên THẮNG là người báo
-  // cáo (không phải "người vừa đi nước cuối"), vì điều này xử lý đúng cả
-  // 2 trường hợp: (1) thắng do chiếu bí — bên thắng chính là người vừa
-  // đi; (2) thắng do đối thủ HẾT GIỜ — không có nước đi nào xảy ra, cả 2
-  // client tự phát hiện timeout gần như đồng thời qua tick() cục bộ,
-  // nên chỉ bên thắng cuộc mới báo cáo để tránh 2 client cùng ghi. Ván
-  // hoà thì để host (slot 0) báo cáo, vì không có "bên thắng" để phân định.
+  // Ghi nhận kết quả ván — bên THẮNG luôn là người báo cáo (xử lý đúng
+  // cả trường hợp thắng do hết giờ/đầu hàng, không chỉ chiếu bí). Có
+  // guard chống stale closure: nếu remote cho thấy round vừa mới bắt đầu
+  // lại (pgn rỗng, không cờ kết quả) thì bỏ qua status cục bộ đang cũ.
   useEffect(() => {
     if (!room || room.status !== "playing") return;
-    const gameOver = status === "won" || status === "draw";
     if (!gameOver) return;
     if (roundFinishReportedRef.current === room.roundNumber) return;
+
+    if (isChessGameState(room.gameState)) {
+      const remote = room.gameState;
+      const remoteHasResult = remote.resignedBySlot != null;
+      if (remote.pgn.trim().length === 0 && !remoteHasResult && pgn.trim().length === 0 && status !== "draw") {
+        return;
+      }
+    }
 
     const shouldIReport = status === "won" ? winner === myColor : mySlot === 0;
     if (!shouldIReport) return;
@@ -160,7 +209,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
       winnerSlot,
       players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
     });
-  }, [status, winner, room, myColor, mySlot, players, pgn, whiteTime, blackTime]);
+  }, [status, winner, gameOver, room, myColor, mySlot, players, pgn, whiteTime, blackTime]);
 
   // Rematch khi tất cả đã sẵn sàng — host tạo ván mới.
   useEffect(() => {
@@ -180,19 +229,64 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     })();
   }, [room, players, isHost]);
 
-  // Host bắt đầu ván đầu tiên khi đủ người + tất cả sẵn sàng.
+  // Host bắt đầu ván đầu tiên khi đủ người + tất cả sẵn sàng — LUÔN reset
+  // `isReady` ngay sau đó để tránh auto-rematch-loop (xem chú thích chi
+  // tiết trong CaroOnlineGame.tsx, cùng 1 lớp lỗi).
   useEffect(() => {
     if (!room || room.status !== "waiting") return;
     if (!isHost) return;
     if (players.length < room.maxPlayers) return;
     if (!players.every((p) => p.isReady)) return;
 
-    void startRoomRound(room.id, {
-      pgn: "",
-      whiteTime: DEFAULT_TIME_SECONDS,
-      blackTime: DEFAULT_TIME_SECONDS,
-    } satisfies ChessGameState);
+    void (async () => {
+      await startRoomRound(room.id, {
+        pgn: "",
+        whiteTime: DEFAULT_TIME_SECONDS,
+        blackTime: DEFAULT_TIME_SECONDS,
+      } satisfies ChessGameState);
+      await resetReadyFlags(room.id);
+    })();
   }, [room, players, isHost]);
+
+  const handleResign = useCallback(async () => {
+    if (!room || mySlot === null) return;
+    setConfirmAction(null);
+    const scoreboard = { ...room.scoreboard };
+    const winnerSlot = mySlot === 0 ? 1 : 0;
+    scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
+    await updateRoomGameState(room.id, { pgn, whiteTime, blackTime, resignedBySlot: mySlot, drawOfferFromSlot: null } satisfies ChessGameState);
+    await finishRoomRound(room.id, scoreboard);
+  }, [room, mySlot, pgn, whiteTime, blackTime]);
+
+  const handleOfferDraw = useCallback(async () => {
+    if (!room || mySlot === null) return;
+    await updateRoomGameState(room.id, { pgn, whiteTime, blackTime, drawOfferFromSlot: mySlot } satisfies ChessGameState);
+  }, [room, mySlot, pgn, whiteTime, blackTime]);
+
+  const handleAcceptDraw = useCallback(async () => {
+    if (!room) return;
+    applyOnlineResult({ isDrawAgreed: true });
+    await finishRoomRound(room.id, room.scoreboard);
+    await updateRoomGameState(room.id, { pgn, whiteTime, blackTime, drawOfferFromSlot: null } satisfies ChessGameState);
+  }, [room, pgn, whiteTime, blackTime, applyOnlineResult]);
+
+  const handleDeclineDraw = useCallback(async () => {
+    if (!room) return;
+    await updateRoomGameState(room.id, { pgn, whiteTime, blackTime, drawOfferFromSlot: null } satisfies ChessGameState);
+  }, [room, pgn, whiteTime, blackTime]);
+
+  const handleLeave = useCallback(async () => {
+    setConfirmAction(null);
+    if (room && mySlot !== null && room.status === "playing" && !gameOver) {
+      const scoreboard = { ...room.scoreboard };
+      const winnerSlot = mySlot === 0 ? 1 : 0;
+      scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
+      await updateRoomGameState(room.id, { pgn, whiteTime, blackTime, resignedBySlot: mySlot } satisfies ChessGameState);
+      await finishRoomRound(room.id, scoreboard);
+    }
+    await leave();
+    window.location.href = "/";
+  }, [room, mySlot, gameOver, pgn, whiteTime, blackTime, leave]);
 
   if (!room) {
     return (
@@ -200,7 +294,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
         <button
           type="button"
           onClick={onExit}
-          className="flex items-center gap-2 self-start text-sm font-medium text-ink-400 transition hover:text-paper-100"
+          className="flex items-center gap-2 self-start text-sm font-medium text-muted transition hover:text-foreground"
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
@@ -220,7 +314,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
           myPlayerRowId={myPlayer?.id ?? null}
           isPlayerOnline={isPlayerOnline}
           onToggleReady={toggleReady}
-          onLeave={leave}
+          onLeave={handleLeave}
         />
       </div>
     );
@@ -247,7 +341,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
           players={players}
           myPlayerRowId={myPlayer?.id ?? null}
           onToggleReady={toggleReady}
-          onLeave={leave}
+          onLeave={handleLeave}
         />
         {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
       </div>
@@ -256,16 +350,19 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto">
-      <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between text-sm text-ink-400">
+      <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between text-sm text-muted">
         <span>
-          Bạn: <span className="text-paper-100">{myPlayer?.displayName}</span> ({myColor === "w" ? "Trắng" : "Đen"})
+          Bạn: <span className="text-foreground">{myPlayer?.displayName}</span> ({myColor === "w" ? "Trắng" : "Đen"})
         </span>
         <span>
-          Đối thủ: <span className="text-paper-100">{opponent?.displayName ?? "..."}</span>
+          Đối thủ: <span className="text-foreground">{opponent?.displayName ?? "..."}</span>
         </span>
       </div>
 
       {opponentOffline && opponent && <OpponentDisconnectedBanner opponentName={opponent.displayName} />}
+      {opponentOfferedDraw && (
+        <DrawOfferBanner opponentName={opponent?.displayName ?? "Đối thủ"} onAccept={handleAcceptDraw} onDecline={handleDeclineDraw} />
+      )}
 
       <div className="flex w-full max-w-[500px] lg:max-w-[820px] flex-col gap-4">
         <Hud />
@@ -277,9 +374,34 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
             <MoveHistory />
           </div>
         </div>
+        <GameActionBar
+          onResign={() => setConfirmAction("resign")}
+          onOfferDraw={handleOfferDraw}
+          onLeave={() => setConfirmAction("leave")}
+          drawOfferPending={iOfferedDraw}
+        />
       </div>
 
       {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
+
+      <ConfirmActionModal
+        open={confirmAction === "resign"}
+        title="Xác nhận đầu hàng"
+        message="Bạn có chắc chắn muốn nhận thua ván này?"
+        confirmLabel="Đầu hàng"
+        danger
+        onConfirm={handleResign}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmActionModal
+        open={confirmAction === "leave"}
+        title="Rời phòng"
+        message={gameOver ? "Bạn có chắc muốn rời phòng?" : "Rời phòng lúc này sẽ tính là bạn đầu hàng. Bạn có chắc chắn?"}
+        confirmLabel="Rời phòng"
+        danger
+        onConfirm={handleLeave}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

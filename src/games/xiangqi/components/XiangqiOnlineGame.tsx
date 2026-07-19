@@ -1,28 +1,47 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useXiangqiStore } from "@/games/xiangqi/store";
 import { Position } from "@/games/xiangqi/engine/types";
 import { XiangqiBoard } from "./Board";
 import { Hud } from "./Hud";
 import { MoveHistory } from "./MoveHistory";
 import { useOnlineRoom } from "@/lib/multiplayer/useOnlineRoom";
-import { finishRoomRound, recordRoundHistory, resetReadyFlags, startRematch, startRoomRound, updateRoomGameState } from "@/lib/multiplayer/rooms";
+import {
+  finishRoomRound,
+  recordRoundHistory,
+  resetReadyFlags,
+  startRematch,
+  startRoomRound,
+  updateRoomGameState,
+} from "@/lib/multiplayer/rooms";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
 import { ChatDrawer } from "@/components/multiplayer/ChatDrawer";
 import { OpponentDisconnectedBanner } from "@/components/multiplayer/OpponentDisconnectedBanner";
+import { GameActionBar } from "@/components/multiplayer/GameActionBar";
+import { DrawOfferBanner } from "@/components/multiplayer/DrawOfferBanner";
+import { ConfirmActionModal } from "@/components/multiplayer/ConfirmActionModal";
 import { ArrowLeft } from "lucide-react";
 
 interface XiangqiGameState {
   moves: { from: Position; to: Position }[];
   redTime: number;
   blackTime: number;
+  drawOfferFromSlot?: number | null;
+  resignedBySlot?: number | null;
 }
 
 function isXiangqiGameState(value: unknown): value is XiangqiGameState {
   return typeof value === "object" && value !== null && Array.isArray((value as XiangqiGameState).moves);
+}
+
+function syncRoomCodeToUrl(code: string | null) {
+  const url = new URL(window.location.href);
+  if (code) url.searchParams.set("room", code);
+  else url.searchParams.delete("room");
+  window.history.replaceState({}, "", url.toString());
 }
 
 const DEFAULT_TIME_SECONDS = 600;
@@ -55,11 +74,9 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
   const isRunning = useXiangqiStore((s) => s.isRunning);
   const startOnlineGame = useXiangqiStore((s) => s.startOnlineGame);
   const syncRemoteState = useXiangqiStore((s) => s.syncRemoteState);
+  const applyOnlineResult = useXiangqiStore((s) => s.applyOnlineResult);
   const tick = useXiangqiStore((s) => s.tick);
 
-  // Danh sách moves dạng {from,to} không suy ngược lại chính xác 100% từ
-  // chuỗi text "c2-c5" của `history` — theo dõi độc lập trong ref, cập
-  // nhật mỗi khi 1 nước đi mới được xác nhận hợp lệ trong local state.
   const movesRef = useRef<{ from: Position; to: Position }[]>([]);
   const lastHandledMoveIndexRef = useRef(0);
 
@@ -67,8 +84,15 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
   const initializedRoundRef = useRef<number | null>(null);
   const lastPushedMoveCountRef = useRef(0);
   const roundFinishReportedRef = useRef<number | null>(null);
+  const appliedResultRef = useRef<number | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"resign" | "leave" | null>(null);
 
   const myColor: "r" | "b" = mySlot === 0 ? "r" : "b";
+  const gameOver = status === "won" || status === "draw";
+  const currentGameState = isXiangqiGameState(room?.gameState) ? room?.gameState : undefined;
+  const drawOfferFromSlot = currentGameState?.drawOfferFromSlot ?? null;
+  const iOfferedDraw = drawOfferFromSlot !== null && drawOfferFromSlot === mySlot;
+  const opponentOfferedDraw = drawOfferFromSlot !== null && drawOfferFromSlot !== mySlot;
 
   useEffect(() => {
     if (autoJoinAttempted.current) return;
@@ -77,7 +101,10 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     void join(initialRoomCode);
   }, [initialRoomCode, join]);
 
-  // Đếm ngược thời gian mỗi giây (để phát hiện hết giờ ở cả 2 client).
+  useEffect(() => {
+    if (room?.code) syncRoomCodeToUrl(room.code);
+  }, [room?.code]);
+
   useEffect(() => {
     if (!isRunning) return;
     const id = setInterval(() => tick(), 1000);
@@ -91,6 +118,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     lastPushedMoveCountRef.current = 0;
     movesRef.current = [];
     lastHandledMoveIndexRef.current = 0;
+    appliedResultRef.current = null;
 
     startOnlineGame(myColor, DEFAULT_TIME_SECONDS);
     if (isXiangqiGameState(room.gameState) && room.gameState.moves.length > 0) {
@@ -103,6 +131,20 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.status, room?.roundNumber, mySlot]);
+
+  // Nhận đầu hàng/cầu hoà đồng ý từ đối thủ.
+  useEffect(() => {
+    if (!room || room.status !== "playing") return;
+    if (!isXiangqiGameState(room.gameState)) return;
+    if (appliedResultRef.current === room.roundNumber) return;
+
+    const state = room.gameState;
+    if (state.resignedBySlot != null) {
+      appliedResultRef.current = room.roundNumber;
+      applyOnlineResult({ resignedColor: state.resignedBySlot === 0 ? "r" : "b" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.gameState, room?.roundNumber, applyOnlineResult]);
 
   // Nhận nước đi mới từ đối thủ.
   useEffect(() => {
@@ -121,7 +163,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.gameState]);
 
-  function pushIfMyMove() {
+  const pushIfMyMove = useCallback(() => {
     if (!room || room.status !== "playing") return;
     if (movesRef.current.length === lastPushedMoveCountRef.current) return;
 
@@ -133,8 +175,9 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
       moves: movesRef.current,
       redTime,
       blackTime,
+      drawOfferFromSlot: null,
     } satisfies XiangqiGameState);
-  }
+  }, [room, myColor, redTime, blackTime]);
 
   // Theo dõi thay đổi board của store để suy ra nước đi cục bộ vừa xảy
   // ra (so sánh 2 snapshot board liên tiếp: ô "from" mất quân, ô "to" đổi
@@ -165,19 +208,23 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
           pushIfMyMove();
         }
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [room?.id]
+    [pushIfMyMove]
   );
 
-  // Ghi nhận kết quả ván — bên THẮNG là người báo cáo (không phải "người
-  // vừa đi nước cuối"), để xử lý đúng cả trường hợp thắng do đối thủ hết
-  // giờ (không có nước đi nào xảy ra). Xem chú thích tương tự trong
-  // ChessOnlineGame.tsx.
+  // Ghi nhận kết quả ván — bên THẮNG luôn là người báo cáo, có guard
+  // chống stale closure (cùng nguyên tắc với Caro/Chess).
   useEffect(() => {
     if (!room || room.status !== "playing") return;
-    const gameOver = status === "won" || status === "draw";
     if (!gameOver) return;
     if (roundFinishReportedRef.current === room.roundNumber) return;
+
+    if (isXiangqiGameState(room.gameState)) {
+      const remote = room.gameState;
+      const remoteHasResult = remote.resignedBySlot != null;
+      if (remote.moves.length === 0 && !remoteHasResult && movesRef.current.length === 0 && status !== "draw") {
+        return;
+      }
+    }
 
     const shouldIReport = status === "won" ? winner === myColor : mySlot === 0;
     if (!shouldIReport) return;
@@ -199,7 +246,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
       winnerSlot,
       players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
     });
-  }, [status, winner, room, myColor, mySlot, players, redTime, blackTime]);
+  }, [status, winner, gameOver, room, myColor, mySlot, players, redTime, blackTime]);
 
   useEffect(() => {
     if (!room || room.status !== "round_finished") return;
@@ -218,18 +265,88 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     })();
   }, [room, players, isHost]);
 
+  // LUÔN reset `isReady` sau khi bắt đầu ván đầu tiên — tránh auto-rematch-loop.
   useEffect(() => {
     if (!room || room.status !== "waiting") return;
     if (!isHost) return;
     if (players.length < room.maxPlayers) return;
     if (!players.every((p) => p.isReady)) return;
 
-    void startRoomRound(room.id, {
-      moves: [],
-      redTime: DEFAULT_TIME_SECONDS,
-      blackTime: DEFAULT_TIME_SECONDS,
-    } satisfies XiangqiGameState);
+    void (async () => {
+      await startRoomRound(room.id, {
+        moves: [],
+        redTime: DEFAULT_TIME_SECONDS,
+        blackTime: DEFAULT_TIME_SECONDS,
+      } satisfies XiangqiGameState);
+      await resetReadyFlags(room.id);
+    })();
   }, [room, players, isHost]);
+
+  const handleResign = useCallback(async () => {
+    if (!room || mySlot === null) return;
+    setConfirmAction(null);
+    const scoreboard = { ...room.scoreboard };
+    const winnerSlot = mySlot === 0 ? 1 : 0;
+    scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
+    await updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+      resignedBySlot: mySlot,
+      drawOfferFromSlot: null,
+    } satisfies XiangqiGameState);
+    await finishRoomRound(room.id, scoreboard);
+  }, [room, mySlot, redTime, blackTime]);
+
+  const handleOfferDraw = useCallback(async () => {
+    if (!room || mySlot === null) return;
+    await updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+      drawOfferFromSlot: mySlot,
+    } satisfies XiangqiGameState);
+  }, [room, mySlot, redTime, blackTime]);
+
+  const handleAcceptDraw = useCallback(async () => {
+    if (!room) return;
+    applyOnlineResult({ isDrawAgreed: true });
+    await finishRoomRound(room.id, room.scoreboard);
+    await updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+      drawOfferFromSlot: null,
+    } satisfies XiangqiGameState);
+  }, [room, redTime, blackTime, applyOnlineResult]);
+
+  const handleDeclineDraw = useCallback(async () => {
+    if (!room) return;
+    await updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+      drawOfferFromSlot: null,
+    } satisfies XiangqiGameState);
+  }, [room, redTime, blackTime]);
+
+  const handleLeave = useCallback(async () => {
+    setConfirmAction(null);
+    if (room && mySlot !== null && room.status === "playing" && !gameOver) {
+      const scoreboard = { ...room.scoreboard };
+      const winnerSlot = mySlot === 0 ? 1 : 0;
+      scoreboard[String(winnerSlot)] = (scoreboard[String(winnerSlot)] ?? 0) + 1;
+      await updateRoomGameState(room.id, {
+        moves: movesRef.current,
+        redTime,
+        blackTime,
+        resignedBySlot: mySlot,
+      } satisfies XiangqiGameState);
+      await finishRoomRound(room.id, scoreboard);
+    }
+    await leave();
+    window.location.href = "/";
+  }, [room, mySlot, gameOver, redTime, blackTime, leave]);
 
   if (!room) {
     return (
@@ -237,7 +354,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
         <button
           type="button"
           onClick={onExit}
-          className="flex items-center gap-2 self-start text-sm font-medium text-ink-400 transition hover:text-paper-100"
+          className="flex items-center gap-2 self-start text-sm font-medium text-muted transition hover:text-foreground"
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
@@ -257,7 +374,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
           myPlayerRowId={myPlayer?.id ?? null}
           isPlayerOnline={isPlayerOnline}
           onToggleReady={toggleReady}
-          onLeave={leave}
+          onLeave={handleLeave}
         />
       </div>
     );
@@ -284,7 +401,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
           players={players}
           myPlayerRowId={myPlayer?.id ?? null}
           onToggleReady={toggleReady}
-          onLeave={leave}
+          onLeave={handleLeave}
         />
         {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
       </div>
@@ -292,7 +409,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto bg-[#F9F3E5] min-h-screen">
+    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto bg-[var(--xq-page-bg)] min-h-screen">
       <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between text-sm text-muted">
         <span>
           Bạn: <span className="text-foreground">{myPlayer?.displayName}</span> ({myColor === "r" ? "Đỏ" : "Đen"})
@@ -303,6 +420,9 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
       </div>
 
       {opponentOffline && opponent && <OpponentDisconnectedBanner opponentName={opponent.displayName} />}
+      {opponentOfferedDraw && (
+        <DrawOfferBanner opponentName={opponent?.displayName ?? "Đối thủ"} onAccept={handleAcceptDraw} onDecline={handleDeclineDraw} />
+      )}
 
       <div className="flex w-full max-w-[500px] lg:max-w-[820px] flex-col gap-4">
         <Hud />
@@ -314,9 +434,34 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
             <MoveHistory />
           </div>
         </div>
+        <GameActionBar
+          onResign={() => setConfirmAction("resign")}
+          onOfferDraw={handleOfferDraw}
+          onLeave={() => setConfirmAction("leave")}
+          drawOfferPending={iOfferedDraw}
+        />
       </div>
 
       {identity && <ChatDrawer messages={chatMessages} myId={identity.id} onSend={sendChat} />}
+
+      <ConfirmActionModal
+        open={confirmAction === "resign"}
+        title="Xác nhận đầu hàng"
+        message="Bạn có chắc chắn muốn nhận thua ván này?"
+        confirmLabel="Đầu hàng"
+        danger
+        onConfirm={handleResign}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmActionModal
+        open={confirmAction === "leave"}
+        title="Rời phòng"
+        message={gameOver ? "Bạn có chắc muốn rời phòng?" : "Rời phòng lúc này sẽ tính là bạn đầu hàng. Bạn có chắc chắn?"}
+        confirmLabel="Rời phòng"
+        danger
+        onConfirm={handleLeave}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

@@ -35,6 +35,8 @@ export interface ChessState {
    * thay vì áp dụng dữ liệu hỏng.
    */
   syncRemoteState: (remote: { pgn: string; whiteTime: number; blackTime: number }) => boolean;
+  /** Áp dụng kết quả đầu hàng hoặc cầu hoà nhận được từ phòng. */
+  applyOnlineResult: (params: { resignedColor?: "w" | "b"; isDrawAgreed?: boolean }) => void;
 }
 
 export const useChessStore = create<ChessState>((set, get) => ({
@@ -223,5 +225,14 @@ export const useChessStore = create<ChessState>((set, get) => ({
       isRunning: nextStatus === "playing",
     });
     return true;
+  },
+
+  applyOnlineResult: (params) => {
+    if (params.resignedColor) {
+      const winnerColor = params.resignedColor === "w" ? "b" : "w";
+      set({ status: "won", winner: winnerColor, isRunning: false });
+    } else if (params.isDrawAgreed) {
+      set({ status: "draw", winner: null, isRunning: false });
+    }
   },
 }));

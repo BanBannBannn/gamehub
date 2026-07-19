@@ -44,39 +44,39 @@ export function XiangqiBoard() {
   // Kích thước ô cờ (sẽ responsive dựa trên css aspect-ratio và width 100%)
   // Tỷ lệ bàn cờ là 8x9 ô (nghĩa là 9x10 giao điểm). Aspect ratio = 8/9
   return (
-    <div className="w-full max-w-[500px] aspect-[8/9] relative bg-[#E3C292] rounded-md shadow-xl border-4 border-[#8B5A2B] select-none">
+    <div className="w-full max-w-[500px] aspect-[8/9] relative bg-[var(--xq-board-bg)] rounded-md shadow-xl border-4 border-[var(--xq-board-line)] select-none">
       
       {/* SVG Board Lines */}
       <div className="absolute inset-0 p-[5%] pointer-events-none">
         <svg className="w-full h-full overflow-visible">
           {/* Horizontal lines */}
           {[...Array(10)].map((_, i) => (
-            <line key={`h${i}`} x1="0" y1={`${(i / 9) * 100}%`} x2="100%" y2={`${(i / 9) * 100}%`} stroke="#8B5A2B" strokeWidth="2" />
+            <line key={`h${i}`} x1="0" y1={`${(i / 9) * 100}%`} x2="100%" y2={`${(i / 9) * 100}%`} stroke="var(--xq-board-line)" strokeWidth="2" />
           ))}
           {/* Vertical lines */}
           {[...Array(9)].map((_, i) => {
             if (i === 0 || i === 8) {
               // Outer continuous lines
-              return <line key={`v${i}`} x1={`${(i / 8) * 100}%`} y1="0" x2={`${(i / 8) * 100}%`} y2="100%" stroke="#8B5A2B" strokeWidth="2" />;
+              return <line key={`v${i}`} x1={`${(i / 8) * 100}%`} y1="0" x2={`${(i / 8) * 100}%`} y2="100%" stroke="var(--xq-board-line)" strokeWidth="2" />;
             }
             return (
               <g key={`v${i}`}>
-                <line x1={`${(i / 8) * 100}%`} y1="0" x2={`${(i / 8) * 100}%`} y2={`${(4 / 9) * 100}%`} stroke="#8B5A2B" strokeWidth="2" />
-                <line x1={`${(i / 8) * 100}%`} y1={`${(5 / 9) * 100}%`} x2={`${(i / 8) * 100}%`} y2="100%" stroke="#8B5A2B" strokeWidth="2" />
+                <line x1={`${(i / 8) * 100}%`} y1="0" x2={`${(i / 8) * 100}%`} y2={`${(4 / 9) * 100}%`} stroke="var(--xq-board-line)" strokeWidth="2" />
+                <line x1={`${(i / 8) * 100}%`} y1={`${(5 / 9) * 100}%`} x2={`${(i / 8) * 100}%`} y2="100%" stroke="var(--xq-board-line)" strokeWidth="2" />
               </g>
             );
           })}
           {/* Top Palace diagonals */}
-          <line x1={`${(3 / 8) * 100}%`} y1="0" x2={`${(5 / 8) * 100}%`} y2={`${(2 / 9) * 100}%`} stroke="#8B5A2B" strokeWidth="2" />
-          <line x1={`${(5 / 8) * 100}%`} y1="0" x2={`${(3 / 8) * 100}%`} y2={`${(2 / 9) * 100}%`} stroke="#8B5A2B" strokeWidth="2" />
+          <line x1={`${(3 / 8) * 100}%`} y1="0" x2={`${(5 / 8) * 100}%`} y2={`${(2 / 9) * 100}%`} stroke="var(--xq-board-line)" strokeWidth="2" />
+          <line x1={`${(5 / 8) * 100}%`} y1="0" x2={`${(3 / 8) * 100}%`} y2={`${(2 / 9) * 100}%`} stroke="var(--xq-board-line)" strokeWidth="2" />
           
           {/* Bottom Palace diagonals */}
-          <line x1={`${(3 / 8) * 100}%`} y1={`${(7 / 9) * 100}%`} x2={`${(5 / 8) * 100}%`} y2="100%" stroke="#8B5A2B" strokeWidth="2" />
-          <line x1={`${(5 / 8) * 100}%`} y1={`${(7 / 9) * 100}%`} x2={`${(3 / 8) * 100}%`} y2="100%" stroke="#8B5A2B" strokeWidth="2" />
+          <line x1={`${(3 / 8) * 100}%`} y1={`${(7 / 9) * 100}%`} x2={`${(5 / 8) * 100}%`} y2="100%" stroke="var(--xq-board-line)" strokeWidth="2" />
+          <line x1={`${(5 / 8) * 100}%`} y1={`${(7 / 9) * 100}%`} x2={`${(3 / 8) * 100}%`} y2="100%" stroke="var(--xq-board-line)" strokeWidth="2" />
 
           {/* River text */}
-          <text x="25%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#8B5A2B" className="font-serif text-3xl sm:text-4xl opacity-50" style={{ writingMode: "vertical-rl" }}>楚 河</text>
-          <text x="75%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#8B5A2B" className="font-serif text-3xl sm:text-4xl opacity-50" style={{ writingMode: "vertical-rl" }}>漢 界</text>
+          <text x="25%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="var(--xq-board-line)" className="font-serif text-3xl sm:text-4xl opacity-50" style={{ writingMode: "vertical-rl" }}>楚 河</text>
+          <text x="75%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="var(--xq-board-line)" className="font-serif text-3xl sm:text-4xl opacity-50" style={{ writingMode: "vertical-rl" }}>漢 界</text>
         </svg>
       </div>
 

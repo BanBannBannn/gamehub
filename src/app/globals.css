@@ -34,6 +34,25 @@
 
   --radius-card: 1.25rem;
   --radius-cell: 0.5rem;
+
+  /* Semantic tokens riêng cho bàn Cờ Tướng — cố tình KHÔNG dùng class
+     `dark:` của Tailwind vì project này toggle theme bằng class
+     `html.light` (mặc định root đã là dark), không phải quy ước
+     `.dark`/prefers-color-scheme chuẩn của Tailwind — dùng `dark:` ở
+     đây sẽ phản ứng sai theo cấu hình hệ điều hành thay vì theo nút
+     bấm thật trên web (đây chính là nguyên nhân quân Đen từng bị
+     "tàng hình" ở Light Mode). */
+  --xq-page-bg: var(--color-ink-900);
+  --xq-board-bg: #4a3521;
+  --xq-board-line: #d4b483;
+  --xq-piece-bg: #e8dcc0;
+  --xq-piece-text-red: #ef4444;
+  --xq-piece-text-black: #1a1408;
+  --xq-piece-ring-offset: #4a3521;
+
+  /* Accent text dùng chung — cùng lý do, thay cho pattern
+     `text-amber-600 dark:text-amber-400` (không hoạt động đúng). */
+  --amber-accent-text: var(--color-amber-400);
 }
 
 @theme inline {
@@ -74,6 +93,19 @@ html.light {
   --border: #dfd8c4;
   --border-hover: #d2ccb6;
   --muted: var(--color-ink-600);
+
+  /* Xiangqi — giữ nguyên tông gỗ sáng cổ điển ở Light Mode, đảm bảo
+     quân Đen (`--xq-piece-text-black`) luôn tương phản rõ với nền quân
+     cờ (`--xq-piece-bg`), không phụ thuộc theme của toàn trang. */
+  --xq-page-bg: #f9f3e5;
+  --xq-board-bg: #e3c292;
+  --xq-board-line: #8b5a2b;
+  --xq-piece-bg: #f5e6cc;
+  --xq-piece-text-red: #b91c1c;
+  --xq-piece-text-black: #1a1a1a;
+  --xq-piece-ring-offset: #e3c292;
+
+  --amber-accent-text: #b45309;
 }
 
 * {

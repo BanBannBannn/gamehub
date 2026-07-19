@@ -156,3 +156,95 @@ Trạng thái: **Hoàn thành phiên bản đầu (v1) — có thể chạy, bui
    làm thay bạn trong môi trường này.
 4. (Tuỳ chọn) Bật cron `cleanup_stale_rooms` để tự dọn phòng rác.
 
+---
+
+## Cập nhật — Sửa lỗi UI + hoàn thiện trải nghiệm chơi Online (đợt 2)
+
+> Phiên làm việc này xử lý 1 tài liệu bàn giao (handover doc) từ
+> "Antigravity" — công cụ người dùng dùng để tự test/debug sau khi nhận
+> code multiplayer ở mục trên — tổng hợp các lỗi/yêu cầu phát hiện được.
+> Đã đọc kỹ, tự kiểm tra lại từng điểm trên code thật (không tin mù
+> quáng), và triển khai lại theo cách chuẩn xác hơn ở vài chỗ.
+
+### Đã sửa
+
+**UI/UX:**
+- Thêm `<Header />` vào `/games/xiangqi` (trước đó thiếu hẳn).
+- **Phát hiện nguyên nhân gốc** khiến quân Cờ Tướng màu Đen "tàng hình" ở
+  Light Mode: dự án toggle theme bằng class `html.light` (mặc định root
+  đã là dark), **không phải** quy ước `.dark`/`prefers-color-scheme`
+  chuẩn của Tailwind — nên mọi class `dark:` trong codebase đều phản ứng
+  sai (theo cấu hình hệ điều hành, không theo nút bấm thật trên web). Đã
+  sửa tận gốc: thêm semantic CSS variables `--xq-*` (khai báo riêng cho
+  cả `:root` và `html.light`) cho toàn bộ màu bàn cờ/quân cờ Xiangqi,
+  không dùng `dark:` nữa. Tiện thể tìm và sửa luôn 2 chỗ khác trong
+  codebase có cùng lỗi này (`SetupScreen.tsx` của Xiangqi, `Cell.tsx` của
+  Minesweeper) dù không được báo cáo trực tiếp.
+- **Phát hiện thêm**: toàn bộ 5 component multiplayer viết ở đợt 1
+  (`RoomLobby`, `WaitingRoom`, `RoundResultPanel`, `ChatDrawer`,
+  `OpenRoomsBrowser`) được viết TRƯỚC KHI người dùng tự thêm hệ thống
+  token semantic (`--background`, `--foreground`, `--surface`, `--muted`...)
+  vào `globals.css`, nên vẫn dùng token cũ (`ink-400`, `paper-100`...) —
+  cùng lớp lỗi sẽ hiển thị sai ở Light Mode. Đã thay toàn bộ sang token
+  semantic mới.
+
+**Trải nghiệm chơi Online — thêm mới:**
+- 3 nút **Đầu hàng / Cầu hoà / Rời phòng** hiển thị trong lúc đang chơi
+  (cả 3 game: Caro, Cờ vua, Cờ tướng), thay `window.confirm()` bằng
+  `ConfirmActionModal` tự thiết kế.
+- Cầu hoà lưu trực tiếp vào `rooms.game_state` (cột jsonb có sẵn, không
+  cần migration mới) qua field `drawOfferFromSlot`/`resignedBySlot` —
+  đồng bộ qua Postgres Changes, không qua Broadcast nên không lo bị miss
+  khi 1 bên mạng chập chờn. Đối thủ thấy banner "X đang xin hoà" với 2
+  nút Đồng ý/Từ chối.
+- **Rời phòng**: gọi `leave()` xoá record khỏi DB **và** điều hướng cứng
+  `window.location.href = "/"` (không chỉ unmount component) để đảm bảo
+  dọn sạch toàn bộ state SPA. Rời phòng giữa ván tính là đầu hàng, đối
+  thủ được xử thắng ngay lập tức.
+- **Thay người chơi giữa chừng**: sửa `joinRoom()` trong `rooms.ts` để
+  cho phép tham gia khi phòng đang `round_finished` (trước đây chỉ cho
+  join lúc `waiting`, chặn hẳn việc thay người) — khi 1 người rời phòng
+  đang chơi dở, người còn lại được xử thắng ngay và slot trống có thể
+  đón người chơi thứ 3 vào ngay trong phòng đó.
+- **Bỏ hẳn logic "ép về lại phòng cũ"** khi tạo phòng mới (`createRoom`
+  trước đây tự tìm phòng cũ theo identity và bắt vào lại phòng đó) — theo
+  đúng yêu cầu, giờ luôn tạo phòng mới hoàn toàn. Việc quay lại đúng
+  phòng đang chơi dở khi F5 được xử lý bằng cách khác: đồng bộ mã phòng
+  lên URL (`?room=...`) ngay khi tạo/tham gia phòng (`history.replaceState`,
+  không điều hướng/reload), rồi đọc lại đúng mã đó khi trang được tải lại.
+
+### Bug thật đã tìm thấy và sửa (đúng như tài liệu bàn giao mô tả, đã tự xác minh lại)
+
+1. **Auto-rematch-loop**: cờ `isReady` không được reset về `false` sau
+   khi ván ĐẦU TIÊN bắt đầu (chỉ có reset cho ván thứ 2 trở đi/rematch,
+   thiếu cho lần bắt đầu đầu tiên) — khiến ván đầu vừa kết thúc là tự
+   động vào ván mới ngay lập tức không cần hỏi. Đã thêm `resetReadyFlags()`
+   ngay sau `startRoomRound()` cho cả 3 game.
+2. **Stale closure khi báo cáo kết quả ván mới**: thêm guard kiểm tra dữ
+   liệu THẬT trên phòng (remote `game_state`) trước khi tin tưởng
+   `status`/`winner` cục bộ — nếu remote cho thấy round vừa bắt đầu lại
+   (rỗng, chưa có cờ kết quả nào) thì bỏ qua, không báo cáo kết quả cũ.
+
+### Đã tự kiểm chứng bằng cách chạy thật
+
+- [x] `npx tsc --noEmit` và `npm run lint` → sạch hoàn toàn (0 lỗi).
+- [x] `npm run test` → **90/90 pass** (thêm 6 test mới cho `applyOnlineResult`
+      của cả 3 game: đầu hàng xác định đúng người thắng, cầu hoà đặt đúng
+      trạng thái hoà).
+- [x] `npm run build` → thành công, đủ 8 route.
+- [x] Standalone production server chạy thật + curl xác nhận mọi route
+      (kể cả kèm `?room=MÃ`) đều trả `200`, không crash.
+- [x] Kiểm tra trực tiếp trong CSS đã build ra: xác nhận cả 2 giá trị
+      (dark/light) của các biến `--xq-*` đều có mặt đúng vị trí.
+
+### Vẫn giữ nguyên giới hạn đã ghi nhận trước đó
+
+- ⚠️ Vẫn **không thể tự test luồng 2 người chơi thật qua Supabase Realtime**
+  từ sandbox này (không có quyền mạng tới domain Supabase) — bạn cần tự
+  kiểm thử theo `SETUP_MULTIPLAYER.md`, đặc biệt các luồng MỚI thêm ở đợt
+  này (đầu hàng, cầu hoà, rời phòng giữa ván, thay người chơi, F5 reconnect
+  qua URL) vì đây là những luồng phức tạp nhất, dễ có edge case chưa lường hết.
+- Chưa implement "xử thắng tự động sau X giây mất kết nối" — vẫn chỉ có
+  banner cảnh báo, người chơi phải tự bấm Rời phòng hoặc Đầu hàng nếu
+  muốn kết thúc sớm khi đối thủ mất kết nối lâu.
+

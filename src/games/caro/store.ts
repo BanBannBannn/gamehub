@@ -58,6 +58,12 @@ export interface CaroState {
    * dụng thành công.
    */
   syncRemoteBoard: (remote: { movesHistory: number[]; humanPlayer: 1 | 2 }) => boolean;
+  /**
+   * Áp dụng kết quả đầu hàng hoặc cầu hoà nhận được từ phòng — không đi
+   * qua replay nước đi (vì đây không phải 1 nước đi), chỉ trực tiếp đặt
+   * `winner`/`isDraw` và dừng ván.
+   */
+  applyOnlineResult: (params: { resignedPlayer?: 1 | 2; isDrawAgreed?: boolean }) => void;
 }
 
 function checkGameEnd(board: Board, lastIndex: number): { winner: WinResult | null; isDraw: boolean } {
@@ -262,5 +268,18 @@ export const useCaroStore = create<CaroState>((set, get) => ({
       lastHintReason: null,
     });
     return true;
+  },
+
+  applyOnlineResult: (params) => {
+    if (params.resignedPlayer) {
+      const winnerPlayer = otherPlayer(params.resignedPlayer);
+      set({
+        winner: { winner: winnerPlayer, line: [] },
+        isDraw: false,
+        isRunning: false,
+      });
+    } else if (params.isDrawAgreed) {
+      set({ winner: null, isDraw: true, isRunning: false });
+    }
   },
 }));

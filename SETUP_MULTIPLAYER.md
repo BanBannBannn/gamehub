@@ -59,14 +59,36 @@ khác nhau), cách kiểm thử đơn giản nhất:
    ở cả 2 tab để xác nhận ván thứ 2 bắt đầu đúng trong cùng phòng (tỉ số
    được cộng dồn).
 5. Lặp lại tương tự cho `/games/chess` và `/games/xiangqi`.
+6. **Kiểm thử thêm các luồng mới (quan trọng, phức tạp nhất):**
+   - Đang chơi, bấm **Cầu hoà** ở tab 1 → xác nhận tab 2 hiện banner "đang
+     xin hoà" → bấm **Đồng ý** ở tab 2 → cả 2 tab phải chuyển sang màn
+     kết quả với "Hoà!". Thử lại với **Từ chối** → banner biến mất, ván
+     tiếp tục bình thường.
+   - Đang chơi, bấm **Đầu hàng** ở tab 1 (xác nhận qua modal) → tab 2
+     phải ngay lập tức thấy mình thắng.
+   - Đang chơi, bấm **Rời phòng** ở tab 1 (xác nhận qua modal) → tab 1
+     phải bị đưa về trang chủ (điều hướng cứng, không chỉ đổi màn hình)
+     → tab 2 phải thấy mình thắng do đối thủ rời.
+   - Sau khi tab 1 rời phòng như trên, mở 1 **tab thứ 3** → "Chơi online"
+     → "Tham gia phòng" → dán đúng mã phòng cũ → xác nhận vào được (thay
+     thế người vừa rời), cả tab 2 và tab 3 bấm "Sẵn sàng" → ván mới bắt
+     đầu bình thường trong đúng phòng đó.
+   - **F5 reload** 1 tab đang chơi dở (không rời phòng) → xác nhận URL
+     vẫn còn `?room=MÃ`, trang tự động load lại đúng ván đang chơi, không
+     bị đẩy về màn hình chọn chế độ.
+   - Vào thẳng `/games/caro` (không có `?room=`) → "Chơi online" → "Tạo
+     phòng mới" → xác nhận **luôn luôn ra mã phòng mới**, không bị kéo về
+     phòng cũ đã tạo trước đó trong cùng phiên.
 
 > Bản thân AI thực hiện task này **không kiểm thử được luồng 2 người
 > chơi thật** vì môi trường sandbox không có quyền truy cập mạng tới
-> Supabase — chỉ kiểm chứng được: build/lint/type-check sạch, 84 unit
-> test pass (bao gồm test validate dữ liệu nhận qua "đồng bộ online" cho
-> cả 3 game), và các route load được (200, không crash). **Bạn cần tự
-> làm bước kiểm thử 2 tab ở trên ít nhất 1 lần** trước khi coi tính năng
-> là hoàn thiện trên môi trường thật của bạn.
+> Supabase — chỉ kiểm chứng được: build/lint/type-check sạch, 90 unit
+> test pass (bao gồm test validate dữ liệu nhận qua "đồng bộ online" và
+> test riêng cho đầu hàng/cầu hoà của cả 3 game), và các route load được
+> (200, không crash, kể cả kèm `?room=MÃ`). **Bạn cần tự làm bước kiểm
+> thử 2-3 tab ở trên ít nhất 1 lần**, đặc biệt mục 6 (các luồng mới, phức
+> tạp, nhiều khả năng còn edge case chưa lường hết) — trước khi coi tính
+> năng là hoàn thiện trên môi trường thật của bạn.
 
 ## 5. Giới hạn đã biết (ghi rõ, không phải bug ẩn)
 
@@ -80,6 +102,10 @@ khác nhau), cách kiểm thử đơn giản nhất:
   nhưng chưa làm ở v1 để tránh rủi ro phá vỡ logic click đã hoạt động ổn.
 - **Chat không lưu lịch sử**, mất khi rời phòng — đây là quyết định thiết
   kế có chủ đích (xem `ONLINE_MULTIPLAYER_PLAN.md` mục 7), không phải thiếu sót.
-- Rời phòng giữa ván (đóng tab) sẽ để đối thủ chờ tới khi cron dọn phòng
-  chạy (mặc định ~5-15 phút) — chưa có nút "xử thắng" thủ công cho người
-  còn lại khi đối thủ mất kết nối quá lâu (chỉ có banner thông báo).
+- Rời phòng **chủ động** (bấm nút Rời phòng) giờ đã tính là đầu hàng và
+  xử thắng ngay cho đối thủ (xem PROGRESS.md đợt 2). Trường hợp còn lại
+  chưa xử lý: **đóng tab đột ngột / mất mạng** (không qua nút Rời phòng)
+  sẽ để đối thủ chỉ thấy banner "mất kết nối" và phải tự bấm Đầu hàng
+  hoặc Rời phòng nếu muốn kết thúc sớm — chưa có cơ chế tự động xử thắng
+  sau X giây mất kết nối (đối thủ vẫn có thể chờ, hoặc phòng sẽ tự dọn
+  sau ~5-15 phút qua cron nếu không ai còn kết nối).

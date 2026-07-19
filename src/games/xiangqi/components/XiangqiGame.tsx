@@ -170,7 +170,7 @@ export function XiangqiGame() {
 
   if (status === "idle") {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 bg-[#F9F3E5]">
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 bg-[var(--xq-page-bg)]">
         <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
           <ArrowLeft size={16} /> Quay lại trang chủ
         </Link>
@@ -180,7 +180,7 @@ export function XiangqiGame() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto bg-[#F9F3E5] min-h-screen">
+    <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6 w-full mx-auto bg-[var(--xq-page-bg)] min-h-screen">
       <div className="flex w-full max-w-[500px] lg:max-w-[820px] items-center justify-between">
         <div className="flex gap-4">
           <button

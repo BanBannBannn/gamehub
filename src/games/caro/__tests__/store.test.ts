@@ -61,4 +61,20 @@ describe("caro store — chế độ online (syncRemoteBoard)", () => {
     expect(state.movesHistory).toEqual([]);
     expect(state.board.every((v) => v === 0)).toBe(true);
   });
+
+  it("applyOnlineResult: đầu hàng đúng xác định người thắng là bên còn lại", () => {
+    useCaroStore.getState().applyOnlineResult({ resignedPlayer: 1 });
+    const state = useCaroStore.getState();
+    expect(state.winner?.winner).toBe(2);
+    expect(state.isDraw).toBe(false);
+    expect(state.isRunning).toBe(false);
+  });
+
+  it("applyOnlineResult: cầu hoà đặt đúng isDraw = true, không có winner", () => {
+    useCaroStore.getState().applyOnlineResult({ isDrawAgreed: true });
+    const state = useCaroStore.getState();
+    expect(state.isDraw).toBe(true);
+    expect(state.winner).toBeNull();
+    expect(state.isRunning).toBe(false);
+  });
 });

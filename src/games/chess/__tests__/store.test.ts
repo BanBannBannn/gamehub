@@ -63,4 +63,19 @@ describe("chess store — chế độ online (syncRemoteState)", () => {
     useChessStore.getState().undoMove();
     expect(useChessStore.getState().pgn).toBe(beforePgn);
   });
+
+  it("applyOnlineResult: đầu hàng xác định đúng người thắng", () => {
+    useChessStore.getState().applyOnlineResult({ resignedColor: "w" });
+    const state = useChessStore.getState();
+    expect(state.status).toBe("won");
+    expect(state.winner).toBe("b");
+    expect(state.isRunning).toBe(false);
+  });
+
+  it("applyOnlineResult: cầu hoà đặt đúng status = draw", () => {
+    useChessStore.getState().applyOnlineResult({ isDrawAgreed: true });
+    const state = useChessStore.getState();
+    expect(state.status).toBe("draw");
+    expect(state.winner).toBeNull();
+  });
 });

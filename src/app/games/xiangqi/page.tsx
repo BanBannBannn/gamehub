@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Header } from "@/components/game-shell/Header";
 import { XiangqiGame } from "@/games/xiangqi/components/XiangqiGame";
 
 export const metadata: Metadata = {
@@ -7,5 +8,12 @@ export const metadata: Metadata = {
 };
 
 export default function XiangqiPage() {
-  return <XiangqiGame />;
+  return (
+    <>
+      <Header />
+      <main className="flex flex-1 flex-col">
+        <XiangqiGame />
+      </main>
+    </>
+  );
 }

@@ -66,4 +66,19 @@ describe("xiangqi store — chế độ online (syncRemoteState)", () => {
     useXiangqiStore.getState().undoMove();
     expect(useXiangqiStore.getState().board).toEqual(beforeBoard);
   });
+
+  it("applyOnlineResult: đầu hàng xác định đúng người thắng", () => {
+    useXiangqiStore.getState().applyOnlineResult({ resignedColor: "r" });
+    const state = useXiangqiStore.getState();
+    expect(state.status).toBe("won");
+    expect(state.winner).toBe("b");
+    expect(state.isRunning).toBe(false);
+  });
+
+  it("applyOnlineResult: cầu hoà đặt đúng status = draw", () => {
+    useXiangqiStore.getState().applyOnlineResult({ isDrawAgreed: true });
+    const state = useXiangqiStore.getState();
+    expect(state.status).toBe("draw");
+    expect(state.winner).toBeNull();
+  });
 });

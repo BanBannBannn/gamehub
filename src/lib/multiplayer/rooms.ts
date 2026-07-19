@@ -70,10 +70,15 @@ async function fetchRoomAndPlayers(
 }
 
 /**
- * Tạo phòng mới cho `gameSlug`. Nếu identity hiện tại đã là host của 1
- * phòng đang mở (waiting/playing/round_finished) cho đúng game này, trả
- * về phòng đó luôn thay vì tạo phòng mới — vừa chống spam vừa khớp tinh
- * thần "1 phòng chơi nhiều ván" (xem ONLINE_MULTIPLAYER_PLAN.md mục 3.1).
+ * Tạo phòng mới cho `gameSlug`. LUÔN sinh ra 1 phòng mới hoàn toàn — cố
+ * tình KHÔNG tự động tìm và ép người chơi vào lại phòng cũ họ từng tạo
+ * (đã thử cách đó ở phiên bản trước để chống spam, nhưng gây khó chịu:
+ * người chơi muốn bỏ phòng cũ bị lỗi/kẹt để tạo phòng mới lại bị ép quay
+ * lại đúng phòng cũ). Việc quay lại đúng phòng đang chơi dở (ví dụ khi
+ * F5 lại trang) được xử lý ở tầng khác: qua mã phòng có sẵn trên URL
+ * (`?room=...`), không phải ở đây — xem `initialRoomCode` trong các
+ * component `*OnlineGame.tsx`. Phòng cũ bị bỏ dở sẽ tự động được dọn bởi
+ * `cleanup_stale_rooms()` (cron), không cần lo rác database.
  */
 export async function createRoom(
   gameSlug: string
@@ -83,28 +88,6 @@ export async function createRoom(
 
   const identity = await getCurrentIdentity();
   const config = getMultiplayerConfig(gameSlug);
-
-  const identityFilter = identity.isGuest
-    ? { column: "host_guest_id" as const, value: identity.id }
-    : { column: "host_user_id" as const, value: identity.id };
-
-  const { data: existingRoomRow } = await supabase
-    .from("rooms")
-    .select("*")
-    .eq("game_slug", gameSlug)
-    .eq(identityFilter.column, identityFilter.value)
-    .in("status", ["waiting", "playing", "round_finished"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingRoomRow) {
-    const snapshot = await fetchRoomAndPlayers(supabase, existingRoomRow.id);
-    if (snapshot) {
-      const me = snapshot.players.find((p) => isSamePlayer(p, identity));
-      if (me) return { ok: true, data: { ...snapshot, slot: me.slot } };
-    }
-  }
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateRoomCode();
@@ -183,7 +166,14 @@ export async function joinRoom(
   }
 
   if (players.length >= room.maxPlayers) return { ok: false, error: "full" };
-  if (room.status !== "waiting") return { ok: false, error: "closed" };
+  // Cho phép tham gia khi phòng đang chờ HOẶC vừa kết thúc 1 ván (còn
+  // trống slot do người trước đó đã rời) — hỗ trợ "thay người chơi" giữa
+  // chừng mà không cần tạo phòng mới. Không cho tham gia khi phòng đang
+  // "playing" (ván đang diễn ra dở dang giữa 2 người khác, tham gia lúc
+  // này không có ý nghĩa vì không thể "vào giữa ván cờ đang đánh").
+  if (room.status !== "waiting" && room.status !== "round_finished") {
+    return { ok: false, error: "closed" };
+  }
 
   const usedSlots = new Set(players.map((p) => p.slot));
   let slot = 0;
