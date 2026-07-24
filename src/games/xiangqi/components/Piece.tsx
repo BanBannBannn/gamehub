@@ -5,6 +5,8 @@ interface PieceProps {
   piece: Piece;
   isSelected?: boolean;
   onClick?: () => void;
+  /** Khi bàn cờ bị xoay 180° (người chơi quân Đen ở chế độ online), xoay ngược quân lại để chữ vẫn đọc đúng chiều. */
+  flipped?: boolean;
 }
 
 const pieceText = {
@@ -28,7 +30,7 @@ const pieceText = {
   }
 };
 
-export function XiangqiPiece({ piece, isSelected, onClick }: PieceProps) {
+export function XiangqiPiece({ piece, isSelected, onClick, flipped }: PieceProps) {
   const isRed = piece.color === "r";
   const text = pieceText[piece.color][piece.type];
 
@@ -42,7 +44,10 @@ export function XiangqiPiece({ piece, isSelected, onClick }: PieceProps) {
         ${isSelected ? "ring-4 ring-amber-400 ring-offset-2" : ""}
         hover:scale-105 transition-transform
       `}
-      style={isSelected ? { ["--tw-ring-offset-color" as string]: "var(--xq-piece-ring-offset)" } : undefined}
+      style={{
+        ...(isSelected ? { ["--tw-ring-offset-color" as string]: "var(--xq-piece-ring-offset)" } : {}),
+        ...(flipped ? { transform: "rotate(180deg)" } : {}),
+      }}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >

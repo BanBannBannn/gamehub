@@ -15,6 +15,14 @@ Vào **SQL Editor** trên Supabase Dashboard, chạy lần lượt 2 file:
    `room_round_history` để lưu lại lịch sử các ván đã hoàn thành. Có thể
    bỏ qua nếu không cần xem lại lịch sử — mọi tính năng chơi online khác
    vẫn hoạt động bình thường không có bảng này.
+3. `supabase/migrations/0004_leaderboard.sql` — **tuỳ chọn (nên chạy)**, tạo
+   bảng `player_stats` cho **xếp hạng Elo** + trang `/leaderboard`. Chỉ tính
+   điểm cho người đã đăng nhập (RLS `auth.uid() = user_id`). Nếu bỏ qua, trang
+   xếp hạng hiện trống và điểm không được ghi — các tính năng chơi khác không
+   bị ảnh hưởng.
+
+> Nếu dùng Supabase CLI đã link project: chỉ cần `supabase db push` để áp dụng
+> các migration còn thiếu (an toàn/idempotent).
 
 ## 2. Bật Realtime cho 2 bảng (nếu Dashboard không tự bật)
 

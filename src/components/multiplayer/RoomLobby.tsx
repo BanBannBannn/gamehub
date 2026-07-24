@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { DoorOpen, KeyRound, Loader2 } from "lucide-react";
+import { DoorOpen, KeyRound, Loader2, Zap } from "lucide-react";
 import { OpenRoomsBrowser } from "./OpenRoomsBrowser";
 
 interface RoomLobbyProps {
@@ -10,12 +10,24 @@ interface RoomLobbyProps {
   gameTitle: string;
   isLoading: boolean;
   error: string | null;
+  notice?: string | null;
   onCreate: () => void;
   onJoin: (code: string) => void;
+  onQuickMatch?: () => void;
   onBack: () => void;
 }
 
-export function RoomLobby({ gameSlug, gameTitle, isLoading, error, onCreate, onJoin, onBack }: RoomLobbyProps) {
+export function RoomLobby({
+  gameSlug,
+  gameTitle,
+  isLoading,
+  error,
+  notice,
+  onCreate,
+  onJoin,
+  onQuickMatch,
+  onBack,
+}: RoomLobbyProps) {
   const [joinMode, setJoinMode] = useState(false);
   const [codeInput, setCodeInput] = useState("");
 
@@ -28,8 +40,34 @@ export function RoomLobby({ gameSlug, gameTitle, isLoading, error, onCreate, onJ
         </p>
       </div>
 
+      {notice && (
+        <p className="w-full rounded-lg border border-border-hover bg-surface-hover/60 px-4 py-2 text-sm text-muted">
+          {notice}
+        </p>
+      )}
+
       {!joinMode ? (
         <div className="grid w-full gap-3">
+          {onQuickMatch && (
+            <motion.button
+              type="button"
+              onClick={onQuickMatch}
+              disabled={isLoading}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group flex items-center gap-4 rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-left transition hover:border-amber-400 hover:bg-amber-400/15 active:scale-[0.98] disabled:opacity-50"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-400">
+                {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Zap size={22} />}
+              </span>
+              <span>
+                <p className="font-display text-lg font-semibold text-foreground group-hover:text-amber-400">
+                  Chơi nhanh
+                </p>
+                <p className="text-sm text-muted">Tự tìm phòng còn chỗ hoặc tạo phòng mới cho bạn</p>
+              </span>
+            </motion.button>
+          )}
           <motion.button
             type="button"
             onClick={onCreate}

@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentIdentity } from "./guest";
-import { createRoom, joinRoom, leaveRoom, markPlayerConnection, setPlayerReady, RoomsClientError } from "./rooms";
+import {
+  createRoom,
+  joinRoom,
+  kickPlayer,
+  leaveRoom,
+  listJoinableRooms,
+  markPlayerConnection,
+  setPlayerReady,
+  RoomsClientError,
+} from "./rooms";
 import { useRoomRealtime, isPlayerOnline } from "./useRoomRealtime";
 import { PlayerIdentity, RoomPlayer } from "./types";
 
@@ -29,6 +38,7 @@ export function useOnlineRoom(gameSlug: string) {
   const [mySlot, setMySlot] = useState<number | null>(null);
   const [myPlayerRowId, setMyPlayerRowId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { room, players, chatMessages, onlineIds, sendChat } = useRoomRealtime(roomId, identity);
@@ -71,6 +81,35 @@ export function useOnlineRoom(gameSlug: string) {
     setMyPlayerRowId(me?.id ?? null);
   }, []);
 
+  // "Chơi nhanh": tìm 1 phòng còn chỗ để vào; nếu không có thì tự tạo phòng mới.
+  const quickMatch = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const joinable = await listJoinableRooms(gameSlug);
+    if (joinable.length > 0) {
+      const result = await joinRoom(joinable[0].code);
+      setIsLoading(false);
+      if (result.ok) {
+        const me = result.data.players.find((p) => p.slot === result.data.slot);
+        setRoomId(result.data.room.id);
+        setMySlot(result.data.slot);
+        setMyPlayerRowId(me?.id ?? null);
+        return;
+      }
+      // Phòng vừa đầy/đóng ngay lúc đó — rơi xuống tạo phòng mới.
+    }
+    const created = await createRoom(gameSlug);
+    setIsLoading(false);
+    if (!created.ok) {
+      setError(describeError(created.error));
+      return;
+    }
+    const me = created.data.players.find((p) => p.slot === created.data.slot);
+    setRoomId(created.data.room.id);
+    setMySlot(created.data.slot);
+    setMyPlayerRowId(me?.id ?? null);
+  }, [gameSlug]);
+
   const leave = useCallback(async () => {
     if (roomId && myPlayerRowId) {
       await leaveRoom(roomId, myPlayerRowId);
@@ -80,6 +119,10 @@ export function useOnlineRoom(gameSlug: string) {
     setMyPlayerRowId(null);
     setError(null);
   }, [roomId, myPlayerRowId]);
+
+  const kick = useCallback(async (playerRowId: string) => {
+    await kickPlayer(playerRowId);
+  }, []);
 
   const toggleReady = useCallback(async () => {
     if (!myPlayerRowId) return;
@@ -109,9 +152,32 @@ export function useOnlineRoom(gameSlug: string) {
     };
   }, [myPlayerRowId]);
 
+  // Phát hiện bị chủ phòng mời ra ngoài (kick): mình đang có row trong phòng
+  // nhưng realtime cho thấy danh sách người chơi (đã tải) không còn chứa mình,
+  // và phòng chưa đóng → tự rời về sảnh kèm thông báo.
+  useEffect(() => {
+    if (!roomId || !myPlayerRowId) return;
+    if (players.length === 0) return; // chưa tải xong snapshot
+    if (room?.status === "closed") return;
+    const stillIn = players.some((p) => p.id === myPlayerRowId);
+    if (stillIn) return;
+    // Đồng bộ với thay đổi từ hệ thống ngoài (Realtime): mình bị xoá khỏi
+    // phòng → reset state cục bộ. Đây là mục đích chính đáng của effect.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setRoomId(null);
+    setMySlot(null);
+    setMyPlayerRowId(null);
+    setNotice("Bạn đã được đưa ra khỏi phòng.");
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [players, roomId, myPlayerRowId, room?.status]);
+
   const myPlayer = players.find((p) => p.id === myPlayerRowId) ?? null;
   const opponents = players.filter((p) => p.id !== myPlayerRowId);
-  const isHost = mySlot === 0;
+  // Chủ phòng = người có slot nhỏ nhất trong số người CÒN trong phòng. Nhờ vậy
+  // nếu chủ phòng gốc (slot 0) rời đi, người còn lại vẫn trở thành chủ phòng —
+  // tránh kẹt cứng luồng "bắt đầu ván / chơi lại" (vốn chỉ chủ phòng làm được).
+  const lowestSlot = players.length > 0 ? Math.min(...players.map((p) => p.slot)) : null;
+  const isHost = mySlot !== null && mySlot === lowestSlot;
 
   return {
     identity,
@@ -127,10 +193,14 @@ export function useOnlineRoom(gameSlug: string) {
     sendChat,
     isPlayerOnline: (player: RoomPlayer) => isPlayerOnline(player, onlineIds),
     error,
+    notice,
+    clearNotice: () => setNotice(null),
     isLoading,
     create,
     join,
+    quickMatch,
     leave,
+    kick,
     toggleReady,
   };
 }

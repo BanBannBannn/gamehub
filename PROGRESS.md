@@ -248,3 +248,72 @@ Trạng thái: **Hoàn thành phiên bản đầu (v1) — có thể chạy, bui
   banner cảnh báo, người chơi phải tự bấm Rời phòng hoặc Đầu hàng nếu
   muốn kết thúc sớm khi đối thủ mất kết nối lâu.
 
+
+---
+
+## Cập nhật — Đợt 3: Xếp hạng (Elo), Hồ sơ, sửa Cờ tướng & luồng phòng
+
+> Phiên làm việc này nâng GameHub online thành sản phẩm hoàn chỉnh hơn theo
+> yêu cầu: sửa lỗi trải nghiệm Cờ tướng, thêm **xếp hạng**, làm lại trang
+> **Hồ sơ**, và tăng độ bền cho **luồng tạo/vào phòng**. Migration DB đã được
+> đẩy thật lên project Supabase đã link (`fvoygbylguvsilwleljo`).
+
+### A. Cờ tướng + game online
+
+- **Lật bàn cờ cho người chơi quân Đen (online)**: trước đây người cầm quân
+  Đen luôn nhìn bàn từ phía Đỏ (quân mình ở nửa xa, rất khó chơi). Nay bàn tự
+  xoay 180° khi `onlineColor === "b"` — chỉ xoay lớp lưới quân (lớp đường kẻ +
+  chữ "sông" đối xứng dọc nên giữ nguyên là đúng), quân được xoay ngược lại để
+  chữ đọc đúng chiều. **Toạ độ logic không đổi** nên không phải sửa engine.
+- **Cảnh báo Tướng bị chiếu**: tô vòng đỏ nhấp nháy quanh Tướng của bên tới
+  lượt khi đang bị chiếu (dùng `isKingInCheck` sẵn có).
+- **6 unit test engine mới** (`xiangqi/__tests__/engine.test.ts`): flying
+  general chặn nước để lộ 2 Tướng, phát hiện chiếu bí đúng, còn đường thoát thì
+  không phải chiếu bí, luật Tốt. Cờ vua đã tự lật bàn cho quân Đen từ trước.
+
+### B. Xếp hạng Elo + Bảng xếp hạng (chỉ người đã đăng nhập)
+
+- Bảng `player_stats` (`migration 0004_leaderboard.sql`) — 1 dòng/user/game,
+  điểm khởi đầu 1000, RLS chỉ cho ghi điểm của chính mình (`auth.uid() = user_id`).
+- `src/lib/multiplayer/rating.ts` — Elo thuần (K=32), **8 unit test** riêng.
+- Mô hình **self-report**: mỗi client tự ghi kết quả của mình khi ván kết thúc
+  → chỉ ghi đúng 1 dòng của mình (khớp RLS), không cần "người báo cáo" duy
+  nhất, không race. Khách không được xếp hạng; nuốt lỗi nếu bảng chưa migrate.
+- Trang `/leaderboard` (tab theo game) + link ở Header. Tích hợp ghi điểm vào
+  cả 3 game online.
+
+### C. Trang Hồ sơ
+
+- Thẻ **thành tích online** mỗi game (rating + T/H/B + số ván).
+- Lịch sử chơi **mọi game** (trước chỉ Sudoku).
+- **Đổi tên hiển thị** (user ghi `profiles.username`, khách ghi localStorage) —
+  tên này dùng luôn khi vào phòng online.
+
+### D. Luồng phòng chắc chắn hơn
+
+- **Host migration** (bug thật đã sửa): chủ phòng = người có slot nhỏ nhất còn
+  trong phòng. Trước đây `isHost = slot 0` cứng → nếu chủ phòng gốc rời đi thì
+  luồng "bắt đầu ván / chơi lại" kẹt cứng.
+- **Kick**: chủ phòng mời người khác ra khỏi phòng chờ; client bị mời tự phát
+  hiện (qua realtime) và về sảnh kèm thông báo.
+- **Chơi nhanh (Quick match)**: tự tìm phòng còn chỗ để vào, không có thì tạo mới.
+- **Sảnh phòng tự cập nhật** mỗi 5s, liệt kê cả phòng vừa xong ván còn slot
+  trống (thay người giữa chừng), hiện số người hiện tại/tối đa.
+- **Chia sẻ** phòng: nút chép mã + chép/chia sẻ link (Web Share API nếu có).
+
+### Đã tự kiểm chứng bằng cách chạy thật
+
+- [x] `npx tsc --noEmit` sạch, `npm run lint` **0 error**.
+- [x] `npm run test` → **104/104 pass** (thêm 8 test Elo + 6 test engine cờ tướng).
+- [x] `npm run build` → thành công, xuất hiện route `/leaderboard`.
+- [x] `supabase db push` → migration `0004_leaderboard.sql` đã áp dụng thật lên
+      project `fvoygbylguvsilwleljo` (0001–0003 đã có từ trước).
+
+### Giới hạn còn lại
+
+- ⚠️ Vẫn cần **tự kiểm thử 2 tab thật** cho các luồng mới (kick, host
+  migration, quick match, ghi điểm Elo 2 phía) — logic/type/build đã xanh nhưng
+  hành vi realtime nhiều người chỉ chắc chắn khi chạy thật.
+- Xếp hạng ghi từ client (RLS đã siết `auth.uid() = user_id`) — có thể nâng cấp
+  chống gian lận bằng Edge Function sau (đã có mẫu `validate-move`).
+- Chưa có "xem phòng" (spectate) cho người ngoài — đề xuất làm ở đợt sau.

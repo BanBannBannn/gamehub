@@ -2,64 +2,54 @@
 
 import { useEffect, useState } from "react";
 import { RefreshCw, Users } from "lucide-react";
-import { listOpenRooms } from "@/lib/multiplayer/rooms";
-import { Room } from "@/lib/multiplayer/types";
+import { listJoinableRooms, JoinableRoom } from "@/lib/multiplayer/rooms";
 
 interface OpenRoomsBrowserProps {
   gameSlug: string;
   onJoinCode: (code: string) => void;
 }
 
+const POLL_INTERVAL_MS = 5000;
+
 /**
- * Danh sách phòng đang chờ người cho 1 game — tuỳ chọn thêm bên cạnh
- * luồng "tạo phòng / nhập mã" chính. Không tự động realtime (chỉ fetch
- * lại khi bấm làm mới) để tránh mở thêm 1 kênh Realtime chỉ cho mục đích
- * duyệt danh sách — phù hợp với tinh thần hạn chế tài nguyên đã đặt ra.
+ * Danh sách phòng còn chỗ (đang chờ HOẶC vừa xong 1 ván còn slot trống) cho
+ * 1 game. Tự làm mới nhẹ nhàng mỗi 5s (chỉ 1 query, không mở kênh Realtime)
+ * để người mới luôn thấy phòng cập nhật mà không phải bấm tay.
  */
 export function OpenRoomsBrowser({ gameSlug, onJoinCode }: OpenRoomsBrowserProps) {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<JoinableRoom[]>([]);
   const [loading, setLoading] = useState(true);
-
-  async function refresh() {
-    setLoading(true);
-    const list = await listOpenRooms(gameSlug);
-    setRooms(list);
-    setLoading(false);
-  }
 
   useEffect(() => {
     let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) setLoading(true);
-    });
-    listOpenRooms(gameSlug).then((list) => {
+    async function load(showSpinner: boolean) {
+      if (showSpinner) setLoading(true);
+      const list = await listJoinableRooms(gameSlug);
       if (cancelled) return;
       setRooms(list);
       setLoading(false);
-    });
+    }
+    void load(true);
+    const id = setInterval(() => void load(false), POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
   }, [gameSlug]);
 
   return (
     <div className="w-full max-w-md">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-muted">Phòng đang chờ người</p>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          aria-label="Làm mới danh sách phòng"
-          className="flex items-center gap-1 text-xs text-muted hover:text-foreground"
-        >
+        <p className="text-sm font-medium text-muted">Phòng còn chỗ</p>
+        <span className="flex items-center gap-1 text-xs text-muted">
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-          Làm mới
-        </button>
+          Tự cập nhật
+        </span>
       </div>
 
       {rooms.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border-hover px-4 py-6 text-center text-xs text-muted">
-          {loading ? "Đang tải..." : "Chưa có phòng nào đang chờ — hãy tạo phòng mới!"}
+          {loading ? "Đang tải..." : "Chưa có phòng nào còn chỗ — hãy tạo phòng mới hoặc bấm Chơi nhanh!"}
         </p>
       ) : (
         <div className="space-y-2">
@@ -70,10 +60,15 @@ export function OpenRoomsBrowser({ gameSlug, onJoinCode }: OpenRoomsBrowserProps
               onClick={() => onJoinCode(room.code)}
               className="flex w-full items-center justify-between rounded-lg border border-border-hover bg-surface px-4 py-2.5 text-left transition hover:border-amber-400 hover:bg-surface-hover"
             >
-              <span className="font-mono text-sm tracking-widest text-amber-400">{room.code}</span>
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-sm tracking-widest text-amber-400">{room.code}</span>
+                {room.status === "round_finished" && (
+                  <span className="rounded bg-surface-hover px-1.5 py-0.5 text-[10px] text-muted">đang chơi tiếp</span>
+                )}
+              </span>
               <span className="flex items-center gap-1 text-xs text-muted">
                 <Users size={12} />
-                Tối đa {room.maxPlayers} người
+                {room.playerCount}/{room.maxPlayers}
               </span>
             </button>
           ))}

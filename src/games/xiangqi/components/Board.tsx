@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useXiangqiStore } from "../store";
 import { Position } from "../engine/types";
-import { getLegalMoves } from "../engine/logic";
+import { getLegalMoves, isKingInCheck } from "../engine/logic";
 import { XiangqiPiece } from "./Piece";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function XiangqiBoard() {
   const board = useXiangqiStore((s) => s.board);
   const turn = useXiangqiStore((s) => s.turn);
+  const status = useXiangqiStore((s) => s.status);
   const makeMove = useXiangqiStore((s) => s.makeMove);
   const mode = useXiangqiStore((s) => s.mode);
   const onlineColor = useXiangqiStore((s) => s.onlineColor);
@@ -16,6 +17,26 @@ export function XiangqiBoard() {
   const [validMoves, setValidMoves] = useState<Position[]>([]);
 
   const isMyOnlineTurn = mode !== "online" || turn === onlineColor;
+
+  // Lật bàn cờ khi mình chơi quân Đen (online) — để quân của mình ở gần.
+  // Chỉ xoay lớp lưới quân 180°; lớp đường kẻ + chữ "sông" đối xứng dọc
+  // nên giữ nguyên là đúng. Toạ độ logic (x,y) không đổi → không phải sửa
+  // makeMove/handleSquareClick.
+  const flipped = mode === "online" && onlineColor === "b";
+
+  // Ô Tướng của bên đang tới lượt nếu đang bị chiếu — để tô cảnh báo.
+  let checkedKingPos: Position | null = null;
+  if (status === "playing" && isKingInCheck(board, turn)) {
+    for (let y = 0; y < 10 && !checkedKingPos; y++) {
+      for (let x = 3; x <= 5; x++) {
+        const p = board[y][x];
+        if (p?.type === "k" && p.color === turn) {
+          checkedKingPos = { x, y };
+          break;
+        }
+      }
+    }
+  }
 
   const handleSquareClick = (x: number, y: number) => {
     if (!isMyOnlineTurn) return; // chưa tới lượt của mình khi chơi online
@@ -82,11 +103,15 @@ export function XiangqiBoard() {
 
       {/* Grid of Intersections for Interaction */}
       <div className="absolute inset-0 p-[5%]">
-        <div className="relative w-full h-full">
+        <div
+          className="relative w-full h-full"
+          style={flipped ? { transform: "rotate(180deg)" } : undefined}
+        >
           {board.map((row, y) =>
             row.map((piece, x) => {
               const isSelected = selectedPos?.x === x && selectedPos?.y === y;
               const isLegalMove = validMoves.some((m) => m.x === x && m.y === y);
+              const isCheckedKing = checkedKingPos?.x === x && checkedKingPos?.y === y;
 
               return (
                 <div
@@ -111,10 +136,15 @@ export function XiangqiBoard() {
                     <div className="absolute inset-0 rounded-full border-4 border-emerald-500/50 z-20 scale-[0.85]" />
                   )}
 
+                  {/* Tướng đang bị chiếu — cảnh báo đỏ nhấp nháy */}
+                  {isCheckedKing && (
+                    <div className="absolute inset-0 rounded-full ring-4 ring-red-500/80 animate-pulse z-30" />
+                  )}
+
                   {/* Piece */}
                   {piece && (
                     <div className="absolute inset-0 w-[95%] h-[95%] left-[2.5%] top-[2.5%]">
-                      <XiangqiPiece piece={piece} isSelected={isSelected} />
+                      <XiangqiPiece piece={piece} isSelected={isSelected} flipped={flipped} />
                     </div>
                   )}
                 </div>

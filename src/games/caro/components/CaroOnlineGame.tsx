@@ -13,6 +13,8 @@ import {
   startRoomRound,
   updateRoomGameState,
 } from "@/lib/multiplayer/rooms";
+import { recordMyMatchResult } from "@/lib/multiplayer/stats";
+import type { MatchResult } from "@/lib/multiplayer/rating";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -58,10 +60,13 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
     sendChat,
     isPlayerOnline,
     error,
+    notice,
     isLoading,
     create,
     join,
+    quickMatch,
     leave,
+    kick,
     toggleReady,
   } = useOnlineRoom("caro");
 
@@ -76,6 +81,7 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
   const initializedRoundRef = useRef<number | null>(null);
   const lastPushedLengthRef = useRef(0);
   const roundFinishReportedRef = useRef<number | null>(null);
+  const statsRecordedRef = useRef<number | null>(null); // round_number đã ghi điểm xếp hạng của mình, tránh ghi lại
   const appliedResultRef = useRef<number | null>(null); // round_number đã áp dụng đầu hàng/cầu hoà, tránh áp lại
   const [focusedIndex] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<"resign" | "leave" | null>(null);
@@ -186,6 +192,21 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
     }
 
     const winnerSlot: number | null = winner ? (winner.winner === 1 ? 0 : 1) : null;
+
+    // Ghi điểm xếp hạng CỦA CHÍNH MÌNH (self-report) — cả 2 client tự ghi
+    // phía của mình, đúng 1 lần mỗi ván. Khách (chưa đăng nhập) bị bỏ qua.
+    if (statsRecordedRef.current !== room.roundNumber) {
+      statsRecordedRef.current = room.roundNumber;
+      const myResult: MatchResult = isDraw ? "draw" : winnerSlot === mySlot ? "win" : "loss";
+      void recordMyMatchResult({
+        gameSlug: "caro",
+        myUserId: identity && !identity.isGuest ? identity.id : null,
+        myDisplayName: identity?.displayName ?? "",
+        opponentUserId: opponents[0]?.userId ?? null,
+        result: myResult,
+      });
+    }
+
     const shouldIReport = winner ? winnerSlot === mySlot : mySlot === 0;
     if (!shouldIReport) return;
 
@@ -204,7 +225,7 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
       winnerSlot,
       players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
     });
-  }, [winner, isDraw, gameOver, room, movesHistory, mySlot, players]);
+  }, [winner, isDraw, gameOver, room, movesHistory, mySlot, players, identity, opponents]);
 
   // Rematch: khi tất cả đã sẵn sàng ở màn kết quả, host tạo ván mới.
   useEffect(() => {
@@ -295,7 +316,7 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
-        <RoomLobby gameSlug="caro" gameTitle="Caro" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+        <RoomLobby gameSlug="caro" gameTitle="Caro" isLoading={isLoading} error={error} notice={notice} onCreate={create} onJoin={join} onQuickMatch={quickMatch} onBack={onExit} />
       </div>
     );
   }
@@ -309,9 +330,11 @@ export function CaroOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?: 
           players={players}
           maxPlayers={room.maxPlayers}
           myPlayerRowId={myPlayer?.id ?? null}
+          isHost={isHost}
           isPlayerOnline={isPlayerOnline}
           onToggleReady={toggleReady}
           onLeave={handleLeave}
+          onKick={kick}
         />
       </div>
     );

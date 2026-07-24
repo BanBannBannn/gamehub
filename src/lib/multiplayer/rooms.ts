@@ -219,6 +219,18 @@ export async function setPlayerReady(playerRowId: string, isReady: boolean): Pro
   await supabase.from("room_players").update({ is_ready: isReady }).eq("id", playerRowId);
 }
 
+/**
+ * Chủ phòng mời 1 người chơi khác khỏi phòng (chỉ nên gọi khi phòng đang
+ * `waiting`/`round_finished`). Chỉ đơn giản xoá record người chơi đó —
+ * client bị mời sẽ tự phát hiện mình không còn trong danh sách (qua realtime)
+ * và tự rời về sảnh, xem `useOnlineRoom`.
+ */
+export async function kickPlayer(playerRowId: string): Promise<void> {
+  const supabase = createClient();
+  if (!supabase) return;
+  await supabase.from("room_players").delete().eq("id", playerRowId);
+}
+
 export async function markPlayerConnection(playerRowId: string, isConnected: boolean): Promise<void> {
   const supabase = createClient();
   if (!supabase) return;
@@ -335,4 +347,54 @@ export async function listOpenRooms(gameSlug?: string): Promise<Room[]> {
   if (gameSlug) query = query.eq("game_slug", gameSlug);
   const { data } = await query;
   return (data ?? []).map(mapRoomRow);
+}
+
+export interface JoinableRoom {
+  id: string;
+  code: string;
+  gameSlug: string;
+  status: Room["status"];
+  maxPlayers: number;
+  playerCount: number;
+}
+
+/**
+ * Phòng còn slot trống để tham gia — gồm cả phòng `waiting` LẪN `round_finished`
+ * (phòng vừa xong 1 ván, còn chỗ do có người rời đi → "thay người" được).
+ * Chỉ trả về phòng còn ít nhất 1 người và chưa đầy, sắp mới nhất trước.
+ */
+export async function listJoinableRooms(gameSlug?: string): Promise<JoinableRoom[]> {
+  const supabase = createClient();
+  if (!supabase) return [];
+  let query = supabase
+    .from("rooms")
+    .select("id, code, game_slug, status, max_players, created_at, room_players(count)")
+    .in("status", ["waiting", "round_finished"])
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (gameSlug) query = query.eq("game_slug", gameSlug);
+  const { data } = await query;
+  type JoinableRow = {
+    id: string;
+    code: string;
+    game_slug: string;
+    status: string;
+    max_players: number;
+    room_players?: { count: number }[];
+  };
+  const rows = (data ?? []) as unknown as JoinableRow[];
+  return rows
+    .map((row) => {
+      const rel = row.room_players;
+      const playerCount = Array.isArray(rel) ? rel[0]?.count ?? 0 : 0;
+      return {
+        id: row.id,
+        code: row.code,
+        gameSlug: row.game_slug,
+        status: row.status as Room["status"],
+        maxPlayers: row.max_players,
+        playerCount,
+      };
+    })
+    .filter((r) => r.playerCount > 0 && r.playerCount < r.maxPlayers);
 }

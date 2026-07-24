@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, LogOut } from "lucide-react";
+import { Check, Copy, Link2, LogOut, UserX } from "lucide-react";
 import { RoomPlayer } from "@/lib/multiplayer/types";
 
 interface WaitingRoomProps {
@@ -10,9 +10,11 @@ interface WaitingRoomProps {
   players: RoomPlayer[];
   maxPlayers: number;
   myPlayerRowId: string | null;
+  isHost?: boolean;
   isPlayerOnline: (player: RoomPlayer) => boolean;
   onToggleReady: () => void;
   onLeave: () => void;
+  onKick?: (playerRowId: string) => void;
 }
 
 export function WaitingRoom({
@@ -21,21 +23,28 @@ export function WaitingRoom({
   players,
   maxPlayers,
   myPlayerRowId,
+  isHost,
   isPlayerOnline,
   onToggleReady,
   onLeave,
+  onKick,
 }: WaitingRoomProps) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const me = players.find((p) => p.id === myPlayerRowId);
 
-  async function handleCopyLink() {
+  async function copy(kind: "code" | "link") {
     const url = `${window.location.origin}/games/${gameSlug}?room=${roomCode}`;
+    const text = kind === "code" ? roomCode : url;
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (kind === "link" && typeof navigator.share === "function") {
+        await navigator.share({ title: "Vào phòng chơi với mình!", url });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
-      // Trình duyệt chặn clipboard (hiếm) — im lặng bỏ qua, mã phòng vẫn hiển thị sẵn để copy tay.
+      // Trình duyệt chặn clipboard/share (hiếm) — bỏ qua, mã phòng vẫn hiển thị để copy tay.
     }
   }
 
@@ -48,14 +57,24 @@ export function WaitingRoom({
 
       <div className="w-full rounded-xl border border-border-hover bg-surface p-5">
         <p className="font-mono text-3xl font-bold tracking-[0.3em] text-amber-400">{roomCode}</p>
-        <button
-          type="button"
-          onClick={handleCopyLink}
-          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-border-hover px-4 py-2 text-sm font-medium text-foreground transition hover:brightness-110 active:scale-[0.98]"
-        >
-          {copied ? <Check size={16} className="text-teal-400" /> : <Copy size={16} />}
-          {copied ? "Đã sao chép!" : "Sao chép link mời"}
-        </button>
+        <div className="mt-3 flex justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => copy("code")}
+            className="inline-flex items-center gap-2 rounded-lg bg-border-hover px-4 py-2 text-sm font-medium text-foreground transition hover:brightness-110 active:scale-[0.98]"
+          >
+            {copied === "code" ? <Check size={16} className="text-teal-400" /> : <Copy size={16} />}
+            {copied === "code" ? "Đã chép mã!" : "Chép mã"}
+          </button>
+          <button
+            type="button"
+            onClick={() => copy("link")}
+            className="inline-flex items-center gap-2 rounded-lg bg-border-hover px-4 py-2 text-sm font-medium text-foreground transition hover:brightness-110 active:scale-[0.98]"
+          >
+            {copied === "link" ? <Check size={16} className="text-teal-400" /> : <Link2 size={16} />}
+            {copied === "link" ? "Đã chép link!" : "Chia sẻ link"}
+          </button>
+        </div>
       </div>
 
       <div className="w-full space-y-2">
@@ -77,8 +96,21 @@ export function WaitingRoom({
                     {player.displayName}
                     {player.id === myPlayerRowId && <span className="text-muted">(bạn)</span>}
                   </span>
-                  <span className={player.isReady ? "text-teal-400" : "text-muted"}>
-                    {player.isReady ? "Đã sẵn sàng" : "Chưa sẵn sàng"}
+                  <span className="flex items-center gap-2">
+                    <span className={player.isReady ? "text-teal-400" : "text-muted"}>
+                      {player.isReady ? "Đã sẵn sàng" : "Chưa sẵn sàng"}
+                    </span>
+                    {isHost && player.id !== myPlayerRowId && onKick && (
+                      <button
+                        type="button"
+                        onClick={() => onKick(player.id)}
+                        aria-label={`Mời ${player.displayName} ra khỏi phòng`}
+                        title="Mời ra khỏi phòng"
+                        className="text-muted transition hover:text-coral-500"
+                      >
+                        <UserX size={16} />
+                      </button>
+                    )}
                   </span>
                 </>
               ) : (

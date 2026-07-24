@@ -14,6 +14,8 @@ import {
   startRoomRound,
   updateRoomGameState,
 } from "@/lib/multiplayer/rooms";
+import { recordMyMatchResult } from "@/lib/multiplayer/stats";
+import type { MatchResult } from "@/lib/multiplayer/rating";
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -63,10 +65,13 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
     sendChat,
     isPlayerOnline,
     error,
+    notice,
     isLoading,
     create,
     join,
+    quickMatch,
     leave,
+    kick,
     toggleReady,
   } = useOnlineRoom("chess");
 
@@ -85,6 +90,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
   const initializedRoundRef = useRef<number | null>(null);
   const lastPushedPgnRef = useRef<string>("");
   const roundFinishReportedRef = useRef<number | null>(null);
+  const statsRecordedRef = useRef<number | null>(null);
   const appliedResultRef = useRef<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<"resign" | "leave" | null>(null);
 
@@ -189,6 +195,19 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
       }
     }
 
+    // Ghi điểm xếp hạng của chính mình (self-report, cả 2 client tự ghi).
+    if (statsRecordedRef.current !== room.roundNumber) {
+      statsRecordedRef.current = room.roundNumber;
+      const myResult: MatchResult = status === "draw" ? "draw" : winner === myColor ? "win" : "loss";
+      void recordMyMatchResult({
+        gameSlug: "chess",
+        myUserId: identity && !identity.isGuest ? identity.id : null,
+        myDisplayName: identity?.displayName ?? "",
+        opponentUserId: opponents[0]?.userId ?? null,
+        result: myResult,
+      });
+    }
+
     const shouldIReport = status === "won" ? winner === myColor : mySlot === 0;
     if (!shouldIReport) return;
 
@@ -209,7 +228,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
       winnerSlot,
       players: players.map((p) => ({ slot: p.slot, displayName: p.displayName })),
     });
-  }, [status, winner, gameOver, room, myColor, mySlot, players, pgn, whiteTime, blackTime]);
+  }, [status, winner, gameOver, room, myColor, mySlot, players, pgn, whiteTime, blackTime, identity, opponents]);
 
   // Rematch khi tất cả đã sẵn sàng — host tạo ván mới.
   useEffect(() => {
@@ -298,7 +317,7 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
         >
           <ArrowLeft size={16} /> Quay lại chọn chế độ
         </button>
-        <RoomLobby gameSlug="chess" gameTitle="Cờ vua" isLoading={isLoading} error={error} onCreate={create} onJoin={join} onBack={onExit} />
+        <RoomLobby gameSlug="chess" gameTitle="Cờ vua" isLoading={isLoading} error={error} notice={notice} onCreate={create} onJoin={join} onQuickMatch={quickMatch} onBack={onExit} />
       </div>
     );
   }
@@ -312,9 +331,11 @@ export function ChessOnlineGame({ initialRoomCode, onExit }: { initialRoomCode?:
           players={players}
           maxPlayers={room.maxPlayers}
           myPlayerRowId={myPlayer?.id ?? null}
+          isHost={isHost}
           isPlayerOnline={isPlayerOnline}
           onToggleReady={toggleReady}
           onLeave={handleLeave}
+          onKick={kick}
         />
       </div>
     );

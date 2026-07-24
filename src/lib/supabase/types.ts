@@ -139,6 +139,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      player_stats: {
+        Row: {
+          user_id: string;
+          game_slug: string;
+          display_name: string;
+          rating: number;
+          wins: number;
+          losses: number;
+          draws: number;
+          games: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          game_slug: string;
+          display_name: string;
+          rating?: number;
+          wins?: number;
+          losses?: number;
+          draws?: number;
+          games?: number;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          game_slug?: string;
+          display_name?: string;
+          rating?: number;
+          wins?: number;
+          losses?: number;
+          draws?: number;
+          games?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       room_round_history: {
         Row: {
           id: string;
