@@ -317,3 +317,31 @@ Trạng thái: **Hoàn thành phiên bản đầu (v1) — có thể chạy, bui
 - Xếp hạng ghi từ client (RLS đã siết `auth.uid() = user_id`) — có thể nâng cấp
   chống gian lận bằng Edge Function sau (đã có mẫu `validate-move`).
 - Chưa có "xem phòng" (spectate) cho người ngoài — đề xuất làm ở đợt sau.
+
+---
+
+## Cập nhật — v3: Game mới + online chắc hơn + âm thanh
+
+> Phiên tự chạy liên tục (autonomous). Branch `claude/gamehub-v3` gộp toàn bộ
+> v2 (PR #3) + game 2048 (PR #4) rồi thêm loạt tính năng dưới đây.
+
+### Thêm mới
+- 🎮 **Bốn quân (Connect Four)** — game cờ mới: engine thuần (findWinLine 4
+  hướng, AI biết thắng/chặn/tránh bẫy) + 10 test; chơi **2 người / với máy /
+  online** (đồng bộ qua `movesHistory` cột, ghi điểm Elo, đủ đầu hàng/cầu hoà).
+  Route `/games/connect4`.
+- 🎮 **2048** — game giải đố offline: engine thuần + 13 test, phím/vuốt, kỷ lục.
+- 🔌 **Tự xử thắng khi đối thủ mất kết nối > 30s** — hook dùng chung
+  `useOpponentTimeout`, banner đếm ngược, nối vào cả 4 game online.
+- 🔊 **Âm thanh hiệu ứng** (WebAudio, không cần asset) + nút tắt tiếng ở Header;
+  âm thắng/thua ở màn kết quả online (dùng chung 4 game), Bốn quân, 2048.
+- 🧹 Dọn nợ: fix import vitest test Minesweeper, gỡ eslint-disable thừa.
+
+### Đã tự kiểm chứng
+- [x] `npx tsc --noEmit` sạch · `npm run lint` **0 error**.
+- [x] `npm run test` → **127/127 pass** (thêm 10 test Bốn quân + 13 test 2048).
+- [x] `npm run build` → có route `/games/connect4`, `/games/2048`, `/leaderboard`.
+
+### Còn lại / đề xuất tiếp — xem `ROADMAP.md`
+- Spectate (xem phòng), replay ván online, hồ sơ công khai, tùy chỉnh thời gian
+  phòng, Reversi/Wordle, chống gian lận xếp hạng bằng Edge Function, test E2E.
