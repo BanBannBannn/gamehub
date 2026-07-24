@@ -10,7 +10,7 @@ và ước lượng công sức. Dùng để chọn việc cho các phiên làm 
 ## ✅ Đã hoàn thành (v3 — branch `claude/gamehub-v3`, PR #5)
 - 🎮 **2048** — engine + 13 test, phím/vuốt, kỷ lục, offline.
 - 🎮 **Bốn quân (Connect Four)** — engine + 10 test, chơi 2 người / với máy / **online** (Elo).
-- 🎮 **Cờ lật (Reversi/Othello)** — engine + 7 test, 2 người / với máy (AI trọng số vị trí).
+- 🎮 **Cờ lật (Reversi/Othello)** — engine + 7 test, 2 người / với máy / **online** (AI trọng số vị trí).
 - 🔌 **Auto-win khi đối thủ mất kết nối > 30s** — hook chung, 4 game online.
 - 🔊 **Âm thanh** WebAudio + nút tắt tiếng.
 - 🧹 Fix import vitest test Minesweeper, gỡ eslint-disable thừa (0 lỗi lint).
@@ -60,8 +60,7 @@ và ước lượng công sức. Dùng để chọn việc cho các phiên làm 
 Trạng thái hiện tại: mọi việc đã chốt ở trên **đã xong** và nằm trong PR #5.
 Nếu tiếp tục, đề xuất làm theo thứ tự:
 
-1. **Reversi online** — tái dùng `useOnlineRoom` + `movesHistory` (ô = r*8+c),
-   giống hệt cách Bốn quân/Caro đã làm; thêm vào `MULTIPLAYER_CONFIG`. (~1 buổi)
+1. ✅ ~~Reversi online~~ — ĐÃ XONG (đẩy nước trực tiếp do có bỏ lượt).
 2. **Spectate (xem phòng)** — thêm chế độ "viewer" (không slot) vào các
    `*OnlineGame`: subscribe `game_state`, replay read-only, ẩn nút thao tác.
 3. **Tùy chỉnh thời gian phòng** (5/10/15 phút) — lưu `rooms.settings.timeSeconds`,
