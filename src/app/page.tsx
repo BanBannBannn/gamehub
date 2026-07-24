@@ -87,6 +87,15 @@ export default function Home() {
                   accent="#4fd1c5"
                   tag="Cờ"
                 />
+                <GameCard
+                  href="/games/connect4"
+                  title="Bốn quân"
+                  description="Thả quân nối 4 (Connect Four). Chơi 2 người, với máy, hoặc online."
+                  icon={<Grid2x2 size={22} />}
+                  accent="#1d4ed8"
+                  badge="Mới"
+                  tag="Cờ"
+                />
               </div>
             </div>
 
