@@ -6,6 +6,7 @@ import { ArrowLeft, Users, Bot, Globe, RotateCcw } from "lucide-react";
 import { useConnect4Store } from "../store";
 import { Connect4Board } from "./Board";
 import { Connect4OnlineGame } from "./Connect4OnlineGame";
+import { playSound } from "@/lib/sound";
 
 const DISC = { 1: "#ef4444", 2: "#f2b84b" } as const;
 
@@ -40,6 +41,17 @@ export function Connect4Game() {
     const id = setTimeout(() => aiStep(), 450);
     return () => clearTimeout(id);
   }, [mode, status, current, aiPlayer, aiStep]);
+
+  // Âm thanh kết thúc ván (chế độ local).
+  useEffect(() => {
+    if (screen !== "local") return;
+    if (status === "won") playSound(winner === aiPlayer ? "lose" : "win");
+    else if (status === "draw") playSound("notify");
+  }, [status, winner, aiPlayer, screen]);
+
+  const handleLocalDrop = (col: number) => {
+    if (dropAt(col)) playSound("move");
+  };
 
   if (screen === "online") {
     return (
@@ -96,7 +108,7 @@ export function Connect4Game() {
         )}
       </div>
 
-      <Connect4Board onDrop={dropAt} disabled={gameOver || (mode === "ai" && current === aiPlayer)} />
+      <Connect4Board onDrop={handleLocalDrop} disabled={gameOver || (mode === "ai" && current === aiPlayer)} />
 
       {gameOver && (
         <button

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import { use2048Store } from "../store";
 import { Direction, SIZE } from "../engine/types";
+import { playSound } from "@/lib/sound";
 
 const TILE_STYLES: Record<number, { bg: string; fg: string }> = {
   0: { bg: "rgba(238,228,218,0.35)", fg: "transparent" },
@@ -45,6 +46,12 @@ export function Game2048() {
   useEffect(() => {
     newGame();
   }, [newGame]);
+
+  // Âm thanh khi thắng/thua.
+  useEffect(() => {
+    if (status === "won") playSound("win");
+    else if (status === "lost") playSound("lose");
+  }, [status]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { RoomPlayer } from "@/lib/multiplayer/types";
+import { playSound } from "@/lib/sound";
 
 interface RoundResultPanelProps {
   resultLabel: string; // ví dụ "Bạn thắng!" / "X thắng!" / "Hoà!"
@@ -24,6 +26,11 @@ export function RoundResultPanel({
 }: RoundResultPanelProps) {
   const me = players.find((p) => p.id === myPlayerRowId);
   const sortedPlayers = [...players].sort((a, b) => a.slot - b.slot);
+
+  // Âm thanh kết quả (một lần khi panel xuất hiện): 🎉 thắng, 😵 thua, còn lại trung tính.
+  useEffect(() => {
+    playSound(emoji === "🎉" ? "win" : emoji === "😵" ? "lose" : "notify");
+  }, [emoji]);
 
   return (
     <motion.div

@@ -1,11 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun, Grid3x3, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun, Grid3x3, Trophy, Volume2, VolumeX } from "lucide-react";
 import { useTheme } from "@/components/theme/theme-provider";
+import { getMuted, setMuted } from "@/lib/sound";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMutedState(getMuted());
+  }, []);
+
+  function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
@@ -18,6 +31,14 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-2">
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-hover hover:text-foreground"
+          >
+            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
           <button
             type="button"
             onClick={toggleTheme}
