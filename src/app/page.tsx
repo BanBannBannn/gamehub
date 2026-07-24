@@ -157,12 +157,13 @@ export default function Home() {
                   tag="Logic"
                 />
                 <GameCard
-                  title="Ô chữ"
-                  description="Giải ô chữ chủ đề đa dạng, luyện từ vựng mỗi ngày."
+                  href="/games/memory"
+                  title="Lật hình ghép cặp"
+                  description="Rèn trí nhớ — lật 2 lá giống nhau để ghép cặp, hoàn thành với ít lượt nhất."
                   icon={<Puzzle size={22} />}
-                  accent="#e8615c"
+                  accent="#8b7cf6"
+                  badge="Mới"
                   tag="Giải đố"
-                  comingSoon
                 />
                 <GameCard
                   href="/games/doanso"
