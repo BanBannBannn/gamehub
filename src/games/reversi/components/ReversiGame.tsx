@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Users, Bot, RotateCcw } from "lucide-react";
+import { ArrowLeft, Users, Bot, RotateCcw, Globe } from "lucide-react";
 import { useReversiStore } from "../store";
 import { legalMoves, SIZE } from "../engine/logic";
 import { playSound } from "@/lib/sound";
+import { ReversiOnlineGame } from "./ReversiOnlineGame";
 
 export function ReversiGame() {
-  const [screen, setScreen] = useState<"menu" | "game">("menu");
+  const [screen, setScreen] = useState<"menu" | "game" | "online">("menu");
+  const [pendingRoom, setPendingRoom] = useState<string | undefined>(undefined);
   const board = useReversiStore((s) => s.board);
   const current = useReversiStore((s) => s.current);
   const status = useReversiStore((s) => s.status);
@@ -35,9 +37,26 @@ export function ReversiGame() {
     if (status === "over") playSound(winner === aiPlayer ? "lose" : winner ? "win" : "notify");
   }, [status, winner, aiPlayer, screen]);
 
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("room");
+    if (!code) return;
+    queueMicrotask(() => {
+      setPendingRoom(code);
+      setScreen("online");
+    });
+  }, []);
+
   function handleClick(r: number, c: number) {
     if (isAiTurn) return;
     if (playAt(r, c)) playSound("move");
+  }
+
+  if (screen === "online") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <ReversiOnlineGame initialRoomCode={pendingRoom} onExit={() => { setScreen("menu"); setPendingRoom(undefined); }} />
+      </div>
+    );
   }
 
   if (screen === "menu") {
@@ -52,6 +71,7 @@ export function ReversiGame() {
           <div className="mt-6 grid gap-3">
             <MenuButton icon={<Users size={22} />} title="2 người (cùng máy)" desc="Thay phiên nhau trên cùng thiết bị" onClick={() => { startNewGame("hotseat"); setScreen("game"); }} />
             <MenuButton icon={<Bot size={22} />} title="Chơi với máy" desc="Bạn cầm quân Đen, đi trước" onClick={() => { startNewGame("ai", { aiPlayer: 2 }); setScreen("game"); }} />
+            <MenuButton icon={<Globe size={22} />} title="Chơi online" desc="Tạo phòng hoặc vào phòng bạn bè" onClick={() => setScreen("online")} accent />
           </div>
         </div>
       </div>
@@ -113,7 +133,7 @@ export function ReversiGame() {
       {status === "over" && (
         <button
           type="button"
-          onClick={() => startNewGame(mode, { aiPlayer: aiPlayer ?? 2 })}
+          onClick={() => startNewGame(mode === "ai" ? "ai" : "hotseat", { aiPlayer: aiPlayer ?? 2 })}
           className="inline-flex items-center gap-2 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-medium text-ink-950 transition hover:bg-amber-500 active:scale-[0.98]"
         >
           <RotateCcw size={16} /> Ván mới
@@ -133,12 +153,14 @@ function Score({ color, label, value, active }: { color: string; label: string; 
   );
 }
 
-function MenuButton({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
+function MenuButton({ icon, title, desc, onClick, accent }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void; accent?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex items-center gap-4 rounded-xl border border-border-hover bg-surface p-4 text-left transition hover:border-amber-400 hover:bg-surface-hover active:scale-[0.98]"
+      className={`group flex items-center gap-4 rounded-xl border p-4 text-left transition active:scale-[0.98] ${
+        accent ? "border-amber-400/40 bg-amber-400/10 hover:border-amber-400" : "border-border-hover bg-surface hover:border-amber-400 hover:bg-surface-hover"
+      }`}
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">{icon}</span>
       <span>

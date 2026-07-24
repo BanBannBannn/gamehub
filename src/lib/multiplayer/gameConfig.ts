@@ -15,6 +15,7 @@ export const MULTIPLAYER_CONFIG: Record<string, MultiplayerGameConfig> = {
   chess: { minPlayers: 2, maxPlayers: 2, label: "Cờ vua" },
   xiangqi: { minPlayers: 2, maxPlayers: 2, label: "Cờ tướng" },
   connect4: { minPlayers: 2, maxPlayers: 2, label: "Bốn quân" },
+  reversi: { minPlayers: 2, maxPlayers: 2, label: "Cờ lật" },
 };
 
 export function isMultiplayerSupported(gameSlug: string): boolean {
