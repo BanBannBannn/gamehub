@@ -33,7 +33,7 @@ export function useOpponentTimeout(params: {
     }
 
     let remaining = seconds;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setSecondsLeft(remaining);
     const id = setInterval(() => {
       remaining -= 1;

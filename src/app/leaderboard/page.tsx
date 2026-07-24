@@ -28,7 +28,7 @@ export default function LeaderboardPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setLoading(true);
     listLeaderboard(game).then((data) => {
       if (cancelled) return;

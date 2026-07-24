@@ -56,7 +56,7 @@ export default function ProfilePage() {
       const { guestName: gn } = getOrCreateGuestIdentity();
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGuestNameState(gn);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setLoading(false);
       return;
     }
