@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid, Circle } from "lucide-react";
 
 export default function Home() {
   return (
@@ -93,6 +93,15 @@ export default function Home() {
                   description="Thả quân nối 4 (Connect Four). Chơi 2 người, với máy, hoặc online."
                   icon={<Grid2x2 size={22} />}
                   accent="#1d4ed8"
+                  badge="Mới"
+                  tag="Cờ"
+                />
+                <GameCard
+                  href="/games/reversi"
+                  title="Cờ lật (Reversi)"
+                  description="Kẹp và lật quân đối phương (Othello). Chơi 2 người hoặc với máy."
+                  icon={<Circle size={22} />}
+                  accent="#166534"
                   badge="Mới"
                   tag="Cờ"
                 />
