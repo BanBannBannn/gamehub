@@ -11,6 +11,7 @@ và ước lượng công sức. Dùng để chọn việc cho các phiên làm 
 - 🎮 **2048** — engine + 13 test, phím/vuốt, kỷ lục, offline.
 - 🎮 **Bốn quân (Connect Four)** — engine + 10 test, chơi 2 người / với máy / **online** (Elo).
 - 🎮 **Cờ lật (Reversi/Othello)** — engine + 7 test, 2 người / với máy / **online** (AI trọng số vị trí).
+- 🎮 **Lật hình ghép cặp (Memory)** — engine + 4 test, 3 độ khó, rèn trí nhớ.
 - 🔌 **Auto-win khi đối thủ mất kết nối > 30s** — hook chung, 4 game online.
 - 🔊 **Âm thanh** WebAudio + nút tắt tiếng.
 - 🧹 Fix import vitest test Minesweeper, gỡ eslint-disable thừa (0 lỗi lint).

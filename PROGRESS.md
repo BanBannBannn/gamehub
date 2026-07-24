@@ -345,3 +345,9 @@ Trạng thái: **Hoàn thành phiên bản đầu (v1) — có thể chạy, bui
 ### Còn lại / đề xuất tiếp — xem `ROADMAP.md`
 - Spectate (xem phòng), replay ván online, hồ sơ công khai, tùy chỉnh thời gian
   phòng, Reversi/Wordle, chống gian lận xếp hạng bằng Edge Function, test E2E.
+
+### Bổ sung cuối v3
+- 🎮 **Cờ lật (Reversi)** thêm **chơi online** (đẩy nước trực tiếp do có bỏ lượt).
+- 🎮 **Lật hình ghép cặp (Memory)** — game giải đố mới, 3 độ khó, engine + 4 test.
+- Tổng cộng v3 thêm **4 game mới** (2048, Bốn quân, Cờ lật, Memory); 5 game hỗ trợ online.
+- `npm run test` → **138/138 pass**. `tsc` sạch, `lint` 0 error, `build` đủ route mới.
