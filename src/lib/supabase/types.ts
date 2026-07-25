@@ -211,6 +211,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      run_records: {
+        Row: {
+          user_id: string;
+          game_slug: string;
+          display_name: string;
+          best_rooms_cleared: number;
+          best_time_ms: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          game_slug: string;
+          display_name: string;
+          best_rooms_cleared?: number;
+          best_time_ms?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          game_slug?: string;
+          display_name?: string;
+          best_rooms_cleared?: number;
+          best_time_ms?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
