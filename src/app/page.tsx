@@ -1,4 +1,5 @@
 import { Header } from "@/components/game-shell/Header";
+import { Footer } from "@/components/game-shell/Footer";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
 import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid, Circle } from "lucide-react";
@@ -211,9 +212,7 @@ export default function Home() {
           <div data-banner-id="2024997"></div>
         </section>
       </main>
-      <footer className="border-t border-border py-6 text-center text-xs text-ink-600">
-        GameHub — xây dựng với Next.js &amp; Supabase.
-      </footer>
+      <Footer />
     </>
   );
 }

@@ -47,3 +47,16 @@ npm run lint     # kiểm tra lint
 
 Chi tiết đầy đủ (Supabase, Docker, deploy Vercel...) xem trong `SETUP.md`.
 Để bật tính năng chơi online, xem thêm `SETUP_MULTIPLAYER.md`.
+
+## 📜 Bản quyền & Mã nguồn Mở (Open Source License)
+
+GameHub là một dự án **Mã nguồn Mở (Open Source)** được phát hành dưới giấy phép [MIT License](./LICENSE).
+
+### ⚠️ Quy định về việc tái sử dụng / Fork mã nguồn:
+- **Tự do học tập & phát triển**: Bạn hoàn toàn có thể tham khảo, học tập, fork, chỉnh sửa hoặc đóng góp tính năng cho dự án.
+- **Giữ thông tin tác giả (Attribution Requirement)**: Khi tái sử dụng, tham khảo hoặc fork dự án này (dù là toàn bộ hay một phần mã nguồn), bạn **Giữ lại thông tin tác giả ban đầu** (Copyright notice / Author credit) và liên kết trỏ về repository gốc. Không được phép xóa hoặc giả mạo thông tin quyền tác giả.
+
+## 🔒 Điều khoản & Chính sách
+- **[Chính sách bảo mật (Privacy Policy)](/privacy)**: Cam kết bảo vệ dữ liệu người dùng & quyền riêng tư.
+- **[Điều khoản sử dụng (Terms of Service)](/terms)**: Quy định chung khi trải nghiệm ứng dụng & sử dụng mã nguồn.
+
