@@ -185,6 +185,24 @@ export default function Home() {
                 />
               </div>
             </div>
+            
+            {/* Hành động & Phiêu lưu */}
+            <div>
+              <h3 className="mb-4 font-display text-xl font-semibold text-foreground flex items-center gap-2">
+                <span className="text-amber-500">⚔️</span> Hành Động & Phiêu Lưu
+              </h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <GameCard
+                  href="/games/dead-cells-lite"
+                  title="Dead Cells Lite"
+                  description="Roguelike đi cảnh 2D — chiến đấu, nhặt vật phẩm, mỗi lượt chơi một khác. Bản demo khung."
+                  icon={<Swords size={22} />}
+                  accent="#f2b84b"
+                  badge="Demo"
+                  tag="Hành động"
+                />
+              </div>
+            </div>
           </div>
         </section>
 
