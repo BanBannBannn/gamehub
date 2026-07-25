@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun, Grid3x3 } from "lucide-react";
+import { Moon, Sun, Grid3x3, Trophy } from "lucide-react";
 import { useTheme } from "@/components/theme/theme-provider";
 
 export function Header() {
@@ -26,6 +26,13 @@ export function Header() {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+          <Link
+            href="/leaderboard"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-hover hover:text-foreground"
+          >
+            <Trophy size={16} className="text-amber-400" />
+            <span className="hidden sm:inline">Xếp hạng</span>
+          </Link>
           <Link
             href="/profile"
             className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-hover hover:text-foreground"

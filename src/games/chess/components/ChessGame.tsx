@@ -5,6 +5,7 @@ import { useChessStore } from "@/games/chess/store";
 import { Board } from "./Board";
 import { Hud } from "./Hud";
 import { SetupScreen } from "./SetupScreen";
+import { ChessOnlineGame } from "./ChessOnlineGame";
 import { MoveHistory } from "./MoveHistory";
 import { stockfishEngine } from "../engine/ai";
 import Link from "next/link";
@@ -22,8 +23,21 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 export function ChessGame() {
   const [ready, setReady] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [screenMode, setScreenMode] = useState<"menu" | "local" | "online">("menu");
+  const [pendingRoomCode, setPendingRoomCode] = useState<string | undefined>(undefined);
   const isOnline = useIsOnline();
   const hasQueuedCompletion = useRef(false);
+
+  // Nếu người dùng mở link mời (?room=MÃ), tự động vào thẳng màn hình online.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("room");
+    if (!code) return;
+    queueMicrotask(() => {
+      setPendingRoomCode(code);
+      setScreenMode("online");
+    });
+  }, []);
   
   // AI processing state
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -53,7 +67,7 @@ export function ChessGame() {
     let cancelled = false;
     loadChessProgress().then((saved) => {
       if (cancelled) return;
-      if (saved && (saved.status === "playing" || saved.status === "idle")) {
+      if (saved && saved.mode !== "online" && (saved.status === "playing" || saved.status === "idle")) {
         loadSavedGame({
           fen: saved.fen,
           pgn: saved.pgn,
@@ -87,7 +101,11 @@ export function ChessGame() {
 
     // It's AI's turn (Black)
     let cancelled = false;
-    setIsAiThinking(true);
+    // Dời việc setState ra khỏi phần đồng bộ của effect body (tránh
+    // cascading render ngay lập tức) — vẫn chạy gần như tức thì.
+    queueMicrotask(() => {
+      if (!cancelled) setIsAiThinking(true);
+    });
 
     stockfishEngine.getBestMove(fen, 10, (bestMove) => {
       if (!cancelled && bestMove) {
@@ -106,9 +124,9 @@ export function ChessGame() {
     };
   }, [fen, status, mode, isWhiteTurn, makeMove]);
 
-  // Autosave
+  // Autosave (chỉ áp dụng cho ván chơi local — ván online đã đồng bộ qua Supabase, không cần lưu IndexedDB).
   useEffect(() => {
-    if (!ready || status === "idle") return;
+    if (!ready || status === "idle" || mode === "online") return;
     const id = setTimeout(() => {
       void saveChessProgress({
         gameSlug: "chess",
@@ -148,6 +166,16 @@ export function ChessGame() {
   function handleStart(config: { timeSeconds: number; mode: "ai" | "hotseat"; autoFlip: boolean }) {
     hasQueuedCompletion.current = false;
     startNewGame(config);
+    setScreenMode("local");
+  }
+
+  function handleSelectOnline() {
+    setScreenMode("online");
+  }
+
+  function handleExitOnline() {
+    setScreenMode("menu");
+    setPendingRoomCode(undefined);
   }
 
   function handleQuitClick() {
@@ -157,6 +185,7 @@ export function ChessGame() {
   function handleConfirmQuit() {
     setShowConfirm(false);
     quitGame();
+    setScreenMode("menu");
     void clearChessProgress();
   }
 
@@ -168,13 +197,21 @@ export function ChessGame() {
     );
   }
 
+  if (screenMode === "online") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <ChessOnlineGame initialRoomCode={pendingRoomCode} onExit={handleExitOnline} />
+      </div>
+    );
+  }
+
   if (status === "idle") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
         <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
           <ArrowLeft size={16} /> Quay lại trang chủ
         </Link>
-        <SetupScreen onStart={handleStart} />
+        <SetupScreen onStart={handleStart} onSelectOnline={handleSelectOnline} />
       </div>
     );
   }
@@ -246,7 +283,7 @@ export function ChessGame() {
                 Thoát
               </button>
               <button
-                onClick={() => handleStart({ timeSeconds: timeConfig, mode, autoFlip })}
+                onClick={() => handleStart({ timeSeconds: timeConfig, mode: mode === "online" ? "hotseat" : mode, autoFlip })}
                 className="w-full rounded-xl bg-amber-400 py-2.5 font-medium text-ink-950 transition hover:bg-amber-500 whitespace-nowrap px-4"
               >
                 Chơi lại

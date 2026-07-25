@@ -20,7 +20,7 @@ export function Board({ focusedIndex }: { focusedIndex: number | null }) {
   const lastMoveIndex = movesHistory[movesHistory.length - 1] ?? null;
   const winningCells = new Set(winner?.line ?? []);
   const gameOver = Boolean(winner) || isDraw;
-  const isHumanTurn = mode !== "ai" || currentPlayer === humanPlayer;
+  const isHumanTurn = mode === "hotseat" || currentPlayer === humanPlayer;
 
   function handleSelect(index: number) {
     if (gameOver || !isHumanTurn || isAiThinking) return;

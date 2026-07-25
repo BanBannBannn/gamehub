@@ -17,7 +17,7 @@ export interface CaroSaveState {
   gameSlug: "caro";
   board: number[]; // 0 trống, 1 = X, 2 = O
   currentPlayer: 1 | 2;
-  mode: "ai" | "hotseat";
+  mode: "ai" | "hotseat" | "online";
   difficulty: "easy" | "medium" | "hard";
   humanPlayer: 1 | 2;
   movesHistory: number[];
@@ -46,7 +46,7 @@ export interface ChessSaveState {
   blackTime: number;
   status: "idle" | "playing" | "won" | "draw";
   winner: "w" | "b" | null;
-  mode: "ai" | "hotseat";
+  mode: "ai" | "hotseat" | "online";
   autoFlip: boolean;
   timeConfig: number;
   updatedAt: number;
@@ -65,11 +65,11 @@ export interface DoansoSaveState {
 
 export interface SolitaireSaveState {
   gameSlug: "solitaire";
-  stock: any[];
-  waste: any[];
-  foundations: any[][];
-  tableaus: any[][];
-  history: any[];
+  stock: import("@/games/solitaire/engine/types").Card[];
+  waste: import("@/games/solitaire/engine/types").Card[];
+  foundations: import("@/games/solitaire/engine/types").Card[][];
+  tableaus: import("@/games/solitaire/engine/types").Card[][];
+  history: import("@/games/solitaire/engine/types").HistoryAction[];
   status: "playing" | "won";
   moves: number;
   elapsedSeconds: number;
@@ -78,7 +78,7 @@ export interface SolitaireSaveState {
 
 export interface XiangqiSaveState {
   gameSlug: "xiangqi";
-  board: any[][];
+  board: (import("@/games/xiangqi/engine/types").Piece | null)[][];
   turn: "r" | "b";
   history: string[];
   redTime: number;
@@ -86,6 +86,7 @@ export interface XiangqiSaveState {
   timeConfig: number;
   status: "playing" | "won" | "draw" | "idle";
   winner: "r" | "b" | null;
+  mode: "hotseat" | "online";
   updatedAt: number;
 }
 

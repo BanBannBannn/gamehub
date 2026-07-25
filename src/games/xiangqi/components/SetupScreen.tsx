@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Clock, Users, Bot, Settings2 } from "lucide-react";
+import { Clock, Users, Bot, Settings2, Globe } from "lucide-react";
 
 interface SetupScreenProps {
   onStart: (config: { timeSeconds: number; mode: "hotseat" }) => void;
+  onSelectOnline: () => void;
 }
 
 const TIME_PRESETS = [
@@ -12,7 +13,7 @@ const TIME_PRESETS = [
   { label: "30 phút", value: 1800 },
 ];
 
-export function SetupScreen({ onStart }: SetupScreenProps) {
+export function SetupScreen({ onStart, onSelectOnline }: SetupScreenProps) {
   const [time, setTime] = useState(600);
 
   return (
@@ -37,7 +38,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                 onClick={() => setTime(t.value)}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                   time === t.value
-                    ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    ? "border-amber-500 bg-amber-500/10 text-[var(--amber-accent-text)]"
                     : "border-border text-muted hover:bg-surface-hover"
                 }`}
               >
@@ -55,6 +56,14 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
           >
             <Users size={20} />
             Chơi 2 Người (Local)
+          </button>
+
+          <button
+            onClick={onSelectOnline}
+            className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-amber-500/60 px-6 py-3.5 font-medium text-[var(--amber-accent-text)] transition hover:bg-amber-500/10"
+          >
+            <Globe size={20} />
+            Chơi online — tạo phòng hoặc nhập mã
           </button>
 
           <button

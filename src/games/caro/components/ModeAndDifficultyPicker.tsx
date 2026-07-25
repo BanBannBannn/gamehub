@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Difficulty, GameMode } from "@/games/caro/engine";
-import { Bot, Users } from "lucide-react";
+import { Bot, Users, Globe } from "lucide-react";
 
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string }[] = [
   { value: "easy", label: "Dễ", desc: "Máy đánh khá ngẫu nhiên, phù hợp người mới" },
@@ -13,8 +13,10 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string }[] =
 
 export function ModeAndDifficultyPicker({
   onStart,
+  onSelectOnline,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
+  onSelectOnline: () => void;
 }) {
   const [mode, setMode] = useState<GameMode | null>(null);
 
@@ -59,6 +61,24 @@ export function ModeAndDifficultyPicker({
                 2 người chơi
               </p>
               <p className="text-sm text-ink-400">Rủ bạn chơi cùng trên máy này</p>
+            </span>
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={onSelectOnline}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="group flex items-center gap-4 rounded-xl border border-ink-700 bg-ink-800/60 p-4 text-left transition hover:border-amber-400 hover:bg-ink-800 active:scale-[0.98]"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral-500/15 text-coral-500">
+              <Globe size={22} />
+            </span>
+            <span>
+              <p className="font-display text-lg font-semibold text-paper-100 group-hover:text-amber-400">
+                Chơi online
+              </p>
+              <p className="text-sm text-ink-400">Tạo phòng hoặc tham gia bằng mã, chơi với bạn bè từ xa</p>
             </span>
           </motion.button>
         </div>
