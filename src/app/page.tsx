@@ -187,6 +187,11 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Ad Banner */}
+        <section className="flex justify-center py-8">
+          <div data-banner-id="2024997"></div>
+        </section>
       </main>
       <footer className="border-t border-border py-6 text-center text-xs text-ink-600">
         GameHub — xây dựng với Next.js &amp; Supabase.
