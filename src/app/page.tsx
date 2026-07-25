@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid } from "lucide-react";
 
 export default function Home() {
   return (
@@ -152,6 +152,15 @@ export default function Home() {
                   description="Suy luận logic để tìm ra con số bí ẩn trong ít lượt nhất."
                   icon={<Hash size={22} />}
                   accent="#8b7cf6"
+                  badge="Mới"
+                  tag="Logic"
+                />
+                <GameCard
+                  href="/games/2048"
+                  title="2048"
+                  description="Gộp các ô cùng số để đạt tới ô 2048. Chơi bằng phím mũi tên hoặc vuốt."
+                  icon={<Grid size={22} />}
+                  accent="#edc22e"
                   badge="Mới"
                   tag="Logic"
                 />
