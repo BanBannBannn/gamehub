@@ -1,7 +1,7 @@
 import { Header } from "@/components/game-shell/Header";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid, Circle } from "lucide-react";
 
 export default function Home() {
   return (
@@ -87,6 +87,24 @@ export default function Home() {
                   accent="#4fd1c5"
                   tag="Cờ"
                 />
+                <GameCard
+                  href="/games/connect4"
+                  title="Bốn quân"
+                  description="Thả quân nối 4 (Connect Four). Chơi 2 người, với máy, hoặc online."
+                  icon={<Grid2x2 size={22} />}
+                  accent="#1d4ed8"
+                  badge="Mới"
+                  tag="Cờ"
+                />
+                <GameCard
+                  href="/games/reversi"
+                  title="Cờ lật (Reversi)"
+                  description="Kẹp và lật quân đối phương (Othello). Chơi 2 người hoặc với máy."
+                  icon={<Circle size={22} />}
+                  accent="#166534"
+                  badge="Mới"
+                  tag="Cờ"
+                />
               </div>
             </div>
 
@@ -139,12 +157,13 @@ export default function Home() {
                   tag="Logic"
                 />
                 <GameCard
-                  title="Ô chữ"
-                  description="Giải ô chữ chủ đề đa dạng, luyện từ vựng mỗi ngày."
+                  href="/games/memory"
+                  title="Lật hình ghép cặp"
+                  description="Rèn trí nhớ — lật 2 lá giống nhau để ghép cặp, hoàn thành với ít lượt nhất."
                   icon={<Puzzle size={22} />}
-                  accent="#e8615c"
+                  accent="#8b7cf6"
+                  badge="Mới"
                   tag="Giải đố"
-                  comingSoon
                 />
                 <GameCard
                   href="/games/doanso"

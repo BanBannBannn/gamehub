@@ -7,10 +7,15 @@ và ước lượng công sức. Dùng để chọn việc cho các phiên làm 
 > đang chờ review. PR này ("2048 + roadmap") thêm 1 game giải đố offline mới
 > và bản backlog này.
 
-## Vừa thêm ở PR này
-- 🎮 **Game 2048** — engine thuần có unit test (13 test), chơi bằng phím mũi
-  tên hoặc vuốt, lưu kỷ lục vào localStorage, offline hoàn toàn.
-- 🧹 Sửa nốt import `vitest` còn thiếu ở test Minesweeper (lỗi tsc pre-existing trên `main`).
+## ✅ Đã hoàn thành (v3 — branch `claude/gamehub-v3`, PR #5)
+- 🎮 **2048** — engine + 13 test, phím/vuốt, kỷ lục, offline.
+- 🎮 **Bốn quân (Connect Four)** — engine + 10 test, chơi 2 người / với máy / **online** (Elo).
+- 🎮 **Cờ lật (Reversi/Othello)** — engine + 7 test, 2 người / với máy / **online** (AI trọng số vị trí).
+- 🎮 **Lật hình ghép cặp (Memory)** — engine + 4 test, 3 độ khó, rèn trí nhớ.
+- 🔌 **Auto-win khi đối thủ mất kết nối > 30s** — hook chung, 4 game online.
+- 🔊 **Âm thanh** WebAudio + nút tắt tiếng.
+- 🧹 Fix import vitest test Minesweeper, gỡ eslint-disable thừa (0 lỗi lint).
+- (Từ v2/PR #3) Xếp hạng Elo + `/leaderboard`, hồ sơ mới, sửa cờ tướng, luồng phòng.
 
 ## Ưu tiên cao (giá trị lớn, công sức vừa)
 1. **Xử thắng tự động khi đối thủ mất kết nối quá lâu** (online) — hiện chỉ có
@@ -48,3 +53,27 @@ và ước lượng công sức. Dùng để chọn việc cho các phiên làm 
 - Mỗi game mới nên có: engine thuần + unit test, store zustand, route
   `/games/<slug>`, card ở trang chủ. Game online thì thêm `<Game>OnlineGame.tsx`
   dùng `useOnlineRoom` + đăng ký `MULTIPLAYER_CONFIG`.
+
+---
+
+## 🔜 Kế hoạch phiên sau (ưu tiên từ trên xuống)
+
+Trạng thái hiện tại: mọi việc đã chốt ở trên **đã xong** và nằm trong PR #5.
+Nếu tiếp tục, đề xuất làm theo thứ tự:
+
+1. ✅ ~~Reversi online~~ — ĐÃ XONG (đẩy nước trực tiếp do có bỏ lượt).
+2. **Spectate (xem phòng)** — thêm chế độ "viewer" (không slot) vào các
+   `*OnlineGame`: subscribe `game_state`, replay read-only, ẩn nút thao tác.
+3. **Tùy chỉnh thời gian phòng** (5/10/15 phút) — lưu `rooms.settings.timeSeconds`,
+   đọc khi `startOnlineGame` (Cờ vua/Cờ tướng). Caro/Bốn quân không có đồng hồ.
+4. **Replay ván online** — đã lưu `final_game_state`; dựng trình xem lại từng nước.
+5. **Hồ sơ công khai** `/u/[username]` + link từ bảng xếp hạng.
+6. **Âm thanh "tới lượt" online** — phát `notify` khi `game_state` đổi sang lượt mình.
+7. **Game mới**: Wordle tiếng Việt (thay ô "Ô chữ" coming-soon), Tiến lên miền Nam.
+8. **Chống gian lận xếp hạng** — chuyển ghi điểm sang Edge Function (mẫu `validate-move/`).
+9. **Test E2E** Playwright 2 context cho luồng online (tự động hoá kiểm thử 2 tab).
+
+## Quy ước thêm game (nhắc lại)
+Engine thuần + unit test → store zustand → route `/games/<slug>` → card trang chủ.
+Game online: thêm `<Game>OnlineGame.tsx` dùng `useOnlineRoom`, đăng ký
+`MULTIPLAYER_CONFIG`, ghi điểm qua `recordMyMatchResult`, nối `useOpponentTimeout`.

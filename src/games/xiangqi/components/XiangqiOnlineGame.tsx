@@ -17,6 +17,9 @@ import {
 } from "@/lib/multiplayer/rooms";
 import { recordMyMatchResult } from "@/lib/multiplayer/stats";
 import type { MatchResult } from "@/lib/multiplayer/rating";
+import { useOpponentTimeout } from "@/lib/multiplayer/useOpponentTimeout";
+
+const DISCONNECT_TIMEOUT_SECONDS = 30;
 import { RoomLobby } from "@/components/multiplayer/RoomLobby";
 import { WaitingRoom } from "@/components/multiplayer/WaitingRoom";
 import { RoundResultPanel } from "@/components/multiplayer/RoundResultPanel";
@@ -367,6 +370,28 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
     window.location.href = "/";
   }, [room, mySlot, gameOver, redTime, blackTime, leave]);
 
+  const claimWinByTimeout = useCallback(async () => {
+    if (!room || mySlot === null || gameOver || room.status !== "playing") return;
+    const opponentSlot = mySlot === 0 ? 1 : 0;
+    const scoreboard = { ...room.scoreboard };
+    scoreboard[String(mySlot)] = (scoreboard[String(mySlot)] ?? 0) + 1;
+    await updateRoomGameState(room.id, {
+      moves: movesRef.current,
+      redTime,
+      blackTime,
+      resignedBySlot: opponentSlot,
+    } satisfies XiangqiGameState);
+    await finishRoomRound(room.id, scoreboard);
+  }, [room, mySlot, gameOver, redTime, blackTime]);
+
+  const opponentForTimeout = opponents[0];
+  const { secondsLeft: disconnectSecondsLeft } = useOpponentTimeout({
+    active: room?.status === "playing" && !gameOver && !!opponentForTimeout,
+    opponentOnline: opponentForTimeout ? isPlayerOnline(opponentForTimeout) : true,
+    seconds: DISCONNECT_TIMEOUT_SECONDS,
+    onTimeout: claimWinByTimeout,
+  });
+
   if (!room) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
@@ -440,7 +465,7 @@ export function XiangqiOnlineGame({ initialRoomCode, onExit }: { initialRoomCode
         </span>
       </div>
 
-      {opponentOffline && opponent && <OpponentDisconnectedBanner opponentName={opponent.displayName} />}
+      {opponentOffline && opponent && <OpponentDisconnectedBanner opponentName={opponent.displayName} secondsLeft={disconnectSecondsLeft} />}
       {opponentOfferedDraw && (
         <DrawOfferBanner opponentName={opponent?.displayName ?? "Đối thủ"} onAccept={handleAcceptDraw} onDecline={handleDeclineDraw} />
       )}
