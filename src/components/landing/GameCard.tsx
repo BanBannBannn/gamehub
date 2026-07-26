@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 interface GameCardProps {
   href?: string;
@@ -16,12 +15,11 @@ interface GameCardProps {
 
 export function GameCard({ href, title, description, icon, accent, badge, tag, comingSoon }: GameCardProps) {
   const content = (
-    <motion.div
-      whileHover={comingSoon ? undefined : { y: -4 }}
-      className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border p-5 transition-colors ${
+    <div
+      className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border p-5 transition-all duration-200 ${
         comingSoon
           ? "border-dashed border-border-hover bg-transparent"
-          : "border-border-hover bg-surface-hover/60 hover:border-amber-400/60"
+          : "border-border-hover bg-surface-hover/60 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-lg"
       }`}
     >
       <div className="absolute right-4 top-4 flex gap-2">
@@ -31,7 +29,13 @@ export function GameCard({ href, title, description, icon, accent, badge, tag, c
           </span>
         )}
         {badge && !comingSoon && (
-          <span className="rounded-full bg-teal-400/15 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              badge === "Thử nghiệm"
+                ? "bg-amber-400/20 text-amber-400 border border-amber-400/30 shadow-xs"
+                : "bg-teal-400/15 text-teal-400"
+            }`}
+          >
             {badge}
           </span>
         )}
@@ -53,7 +57,7 @@ export function GameCard({ href, title, description, icon, accent, badge, tag, c
           Chơi ngay →
         </p>
       )}
-    </motion.div>
+    </div>
   );
 
   if (comingSoon || !href) return content;
