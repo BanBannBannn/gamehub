@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, Home, RotateCcw, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { RunEventPayload } from "../engine/types";
 import { getLocalBest, saveRunResult, RunRecord } from "../lib/records";
@@ -52,24 +54,58 @@ export function DeadCellsGame() {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
+      {/* Top action bar */}
+      <div className="flex w-full max-w-3xl items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/80 px-4 py-2 text-sm font-medium text-foreground transition hover:border-amber-400 hover:bg-surface active:scale-[0.98]"
+        >
+          <ArrowLeft size={16} />
+          <Home size={16} className="text-amber-400" />
+          <span>Quay về trang chủ</span>
+        </Link>
+
+        <button
+          onClick={restart}
+          type="button"
+          className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/80 px-4 py-2 text-sm font-medium text-foreground transition hover:border-amber-400 hover:bg-surface active:scale-[0.98]"
+        >
+          <RotateCcw size={16} className="text-amber-400" />
+          <span>Chơi ván mới</span>
+        </button>
+      </div>
+
       <div className="relative w-full max-w-3xl">
         <DeadCellsCanvas key={runKey} onRunEvent={onRunEvent} />
 
         {result && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-black/80 text-center backdrop-blur-sm">
-            <h2 className="font-display text-2xl font-bold text-foreground">
-              {result.payload.isVictory ? "Hạ gục trùm — Chiến thắng!" : "Bạn đã gục ngã"}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl bg-black/85 p-6 text-center backdrop-blur-md">
+            <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
+              {result.payload.isVictory ? "🎉 Hạ gục trùm — Chiến thắng!" : "💀 Bạn đã gục ngã"}
             </h2>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted sm:text-base">
               Qua {result.payload.roomsCleared} phòng · {result.payload.cellsCollected} tế bào · {formatTime(result.payload.timeMs)}
             </p>
-            {result.isNewBest && <p className="text-sm font-medium text-amber-400">🏆 Kỷ lục cá nhân mới!</p>}
-            <button
-              onClick={restart}
-              className="mt-2 rounded-xl bg-amber-400 px-6 py-2.5 font-medium text-ink-950 transition hover:bg-amber-500 active:scale-[0.98]"
-            >
-              Chơi lại
-            </button>
+            {result.isNewBest && (
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-400 sm:text-base">
+                <Trophy size={18} /> Kỷ lục cá nhân mới!
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={restart}
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-2.5 font-semibold text-ink-950 transition hover:bg-amber-500 active:scale-[0.98]"
+              >
+                <RotateCcw size={18} /> Chơi lại
+              </button>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/90 px-6 py-2.5 font-semibold text-foreground transition hover:bg-border active:scale-[0.98]"
+              >
+                <Home size={18} className="text-amber-400" /> Quay về trang chủ
+              </Link>
+            </div>
           </div>
         )}
       </div>

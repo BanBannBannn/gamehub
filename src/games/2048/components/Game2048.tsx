@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { RotateCcw } from "lucide-react";
+import { ArrowLeft, Home, RotateCcw } from "lucide-react";
 import { use2048Store } from "../store";
 import { Direction, SIZE } from "../engine/types";
 import { playSound } from "@/lib/sound";
@@ -101,6 +102,17 @@ export function Game2048() {
 
   return (
     <div className="flex w-full max-w-[480px] flex-col gap-4">
+      <div className="flex items-center justify-between text-sm text-muted">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/80 px-3.5 py-1.5 text-sm font-medium text-foreground transition hover:border-amber-400 hover:bg-surface active:scale-[0.98]"
+        >
+          <ArrowLeft size={16} />
+          <Home size={16} className="text-amber-400" />
+          <span>Quay về trang chủ</span>
+        </Link>
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">2048</h1>
@@ -151,7 +163,7 @@ export function Game2048() {
               {status === "won" ? "🎉 Bạn đạt 2048!" : "Hết nước đi!"}
             </p>
             <p className="text-sm text-muted">Điểm: {score}</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {status === "won" && (
                 <button
                   type="button"
@@ -168,6 +180,12 @@ export function Game2048() {
               >
                 Ván mới
               </button>
+              <Link
+                href="/"
+                className="rounded-lg border border-border-hover bg-surface-hover/80 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-border"
+              >
+                Trang chủ
+              </Link>
             </div>
           </div>
         )}
