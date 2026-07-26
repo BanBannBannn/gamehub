@@ -4,8 +4,7 @@ import { useSolitaireStore } from "../store";
 import { HelpCircle, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 
 function formatTime(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
@@ -27,9 +26,7 @@ export function Hud() {
     <div className="flex w-full max-w-4xl flex-col gap-3 px-4">
       {/* Top Header */}
       <div className="flex items-center justify-between text-sm text-ink-400">
-        <Link href="/" className="flex items-center gap-1.5 transition hover:text-paper-100">
-          <ArrowLeft size={16} /> Trang chủ
-        </Link>
+        <GameBackButton />
         <button
           onClick={() => setShowRules(true)}
           aria-label="Xem luật chơi"

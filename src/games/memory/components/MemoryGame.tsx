@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { useMemoryStore } from "../store";
 import { Difficulty, GRID_COLS, PAIR_COUNT } from "../engine/logic";
 import { playSound } from "@/lib/sound";
@@ -47,9 +47,7 @@ export function MemoryGame() {
   if (!started) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Quay lại trang chủ
-        </Link>
+        <GameBackButton />
         <div className="w-full max-w-md text-center">
           <h1 className="font-display text-3xl font-bold text-foreground">Lật hình ghép cặp</h1>
           <p className="mt-2 text-sm text-muted">Lật 2 lá giống nhau để ghép cặp. Hoàn thành với ít lượt nhất!</p>
@@ -74,9 +72,7 @@ export function MemoryGame() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
       <div className="flex w-full max-w-[520px] items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Trang chủ
-        </Link>
+        <GameBackButton />
         <div className="flex items-center gap-4 text-sm text-muted">
           <span>Lượt: <span className="font-mono text-foreground">{moves}</span></span>
           <span>Cặp: <span className="font-mono text-foreground">{matched}/{PAIR_COUNT[difficulty]}</span></span>

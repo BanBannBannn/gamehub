@@ -17,6 +17,7 @@ import {
 import { useIsOnline } from "@/lib/offline/sync-provider";
 import { WifiOff, ArrowLeft, LogOut, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function XiangqiGame() {
@@ -171,9 +172,7 @@ export function XiangqiGame() {
   if (status === "idle") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 bg-[var(--xq-page-bg)]">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Quay lại trang chủ
-        </Link>
+        <GameBackButton />
         <SetupScreen onStart={handleStart} onSelectOnline={handleSelectOnline} />
       </div>
     );

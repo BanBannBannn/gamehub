@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Users, Bot, RotateCcw, Globe } from "lucide-react";
+import { Users, Bot, RotateCcw, Globe } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { useReversiStore } from "../store";
 import { legalMoves, SIZE } from "../engine/logic";
 import { playSound } from "@/lib/sound";
@@ -62,9 +62,7 @@ export function ReversiGame() {
   if (screen === "menu") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Quay lại trang chủ
-        </Link>
+        <GameBackButton />
         <div className="w-full max-w-md text-center">
           <h1 className="font-display text-3xl font-bold text-foreground">Cờ lật (Reversi)</h1>
           <p className="mt-2 text-sm text-muted">Kẹp quân đối phương để lật thành quân mình. Nhiều quân hơn khi hết bàn là thắng.</p>
@@ -83,9 +81,7 @@ export function ReversiGame() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
       <div className="flex w-full max-w-[480px] items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Trang chủ
-        </Link>
+        <GameBackButton />
         <button type="button" onClick={() => setScreen("menu")} className="text-sm text-muted transition hover:text-foreground">
           Đổi chế độ
         </button>
@@ -109,7 +105,7 @@ export function ReversiGame() {
       <div className="grid w-full max-w-[480px] gap-[2px] rounded-lg bg-[#14532d] p-[2px] shadow-xl" style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0,1fr))` }}>
         {board.map((row, r) =>
           row.map((v, c) => {
-            const isLegal = myMoves.some((m) => m.r === r && m.c === c);
+            const isLegal = myMoves.some((m: { r: number; c: number }) => m.r === r && m.c === c);
             return (
               <button
                 key={`${r}-${c}`}

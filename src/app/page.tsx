@@ -2,7 +2,7 @@ import { Header } from "@/components/game-shell/Header";
 import { Footer } from "@/components/game-shell/Footer";
 import { AmbientSudokuGrid } from "@/components/landing/AmbientSudokuGrid";
 import { GameCard } from "@/components/landing/GameCard";
-import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid, Circle } from "lucide-react";
+import { Grid3x3, Puzzle, Grid2x2, Hash, Bomb, Crown, Spade, Club, Swords, Grid, Circle, Dices, Keyboard } from "lucide-react";
 
 export default function Home() {
   return (
@@ -183,6 +183,24 @@ export default function Home() {
                   accent="#edc22e"
                   badge="Mới"
                   tag="Logic"
+                />
+                <GameCard
+                  href="/games/dice"
+                  title="Lắc xúc xắc (Yahtzee)"
+                  description="Game Yahtzee 2-4 người — lắc 5 xúc xắc 3D, chọn ô điểm 13 hàng chiến thuật."
+                  icon={<Dices size={22} />}
+                  accent="#f59e0b"
+                  badge="Mới"
+                  tag="Casual"
+                />
+                <GameCard
+                  href="/games/typing"
+                  title="Gõ phím thần tốc (Neon)"
+                  description="Luyện tốc độ gõ phím Cyberpunk — hiệu ứng nổ hạt particle, combo 5x/10x, từ custom."
+                  icon={<Keyboard size={22} />}
+                  accent="#00f0ff"
+                  badge="Neon"
+                  tag="Arcade"
                 />
               </div>
             </div>

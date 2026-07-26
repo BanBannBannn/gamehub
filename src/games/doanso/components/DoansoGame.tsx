@@ -15,8 +15,8 @@ import {
   queuePendingSession,
 } from "@/lib/offline/db";
 import { useIsOnline } from "@/lib/offline/sync-provider";
-import { ArrowLeft, Home, RotateCcw, WifiOff } from "lucide-react";
-import Link from "next/link";
+import { RotateCcw, WifiOff } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function DoansoGame() {
@@ -128,14 +128,7 @@ export function DoansoGame() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-12">
         <div className="w-full max-w-md">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-800/80 px-4 py-2 text-sm font-medium text-paper-100 transition hover:border-amber-400 hover:bg-ink-800 active:scale-[0.98]"
-          >
-            <ArrowLeft size={16} />
-            <Home size={16} className="text-amber-400" />
-            <span>Quay về trang chủ</span>
-          </Link>
+          <GameBackButton />
         </div>
         <DifficultyPicker onPick={handlePick} />
       </div>
@@ -145,14 +138,7 @@ export function DoansoGame() {
   return (
     <div className="flex flex-1 flex-col items-center gap-5 px-4 py-6">
       <div className="flex w-full max-w-sm items-center justify-between text-sm text-ink-400 mb-2">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-800/80 px-3.5 py-1.5 text-sm font-medium text-paper-100 transition hover:border-amber-400 hover:bg-ink-800 active:scale-[0.98]"
-        >
-          <ArrowLeft size={16} />
-          <Home size={16} className="text-amber-400" />
-          <span>Trang chủ</span>
-        </Link>
+        <GameBackButton />
         <button
           onClick={() => setShowConfirm(true)}
           type="button"
