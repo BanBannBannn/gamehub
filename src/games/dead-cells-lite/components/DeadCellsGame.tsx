@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Home, RotateCcw, Trophy } from "lucide-react";
+import { RotateCcw, Trophy, Home } from "lucide-react";
 import dynamic from "next/dynamic";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { RunEventPayload } from "../engine/types";
 import { getLocalBest, saveRunResult, RunRecord } from "../lib/records";
 import type { OnRunEvent } from "./DeadCellsCanvas";
@@ -56,14 +57,7 @@ export function DeadCellsGame() {
     <div className="flex w-full flex-col items-center gap-4">
       {/* Top action bar */}
       <div className="flex w-full max-w-3xl items-center justify-between gap-3">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/80 px-4 py-2 text-sm font-medium text-foreground transition hover:border-amber-400 hover:bg-surface active:scale-[0.98]"
-        >
-          <ArrowLeft size={16} />
-          <Home size={16} className="text-amber-400" />
-          <span>Quay về trang chủ</span>
-        </Link>
+        <GameBackButton />
 
         <button
           onClick={restart}

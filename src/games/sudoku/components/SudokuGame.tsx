@@ -13,6 +13,7 @@ import { loadSudokuProgress, saveSudokuProgress, clearSudokuProgress, queuePendi
 import { useIsOnline } from "@/lib/offline/sync-provider";
 import { WifiOff, ArrowLeft, X } from "lucide-react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 
 export function SudokuGame() {
   const [ready, setReady] = useState(false);
@@ -172,9 +173,7 @@ export function SudokuGame() {
   if (!hasGame) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Quay lại trang chủ
-        </Link>
+        <GameBackButton />
         <DifficultyPicker onPick={handlePick} />
       </div>
     );
@@ -183,9 +182,7 @@ export function SudokuGame() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
       <div className="flex w-full max-w-[min(92vw,560px)] items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Trang chủ
-        </Link>
+        <GameBackButton />
         <button
           type="button"
           onClick={handleQuitGameClick}

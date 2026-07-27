@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Home, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { use2048Store } from "../store";
 import { Direction, SIZE } from "../engine/types";
 import { playSound } from "@/lib/sound";
@@ -103,14 +104,7 @@ export function Game2048() {
   return (
     <div className="flex w-full max-w-[480px] flex-col gap-4">
       <div className="flex items-center justify-between text-sm text-muted">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-border-hover bg-surface-hover/80 px-3.5 py-1.5 text-sm font-medium text-foreground transition hover:border-amber-400 hover:bg-surface active:scale-[0.98]"
-        >
-          <ArrowLeft size={16} />
-          <Home size={16} className="text-amber-400" />
-          <span>Quay về trang chủ</span>
-        </Link>
+        <GameBackButton />
       </div>
 
       <div className="flex items-center justify-between gap-3">

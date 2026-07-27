@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Users, Bot, Globe, RotateCcw } from "lucide-react";
+import { Users, Bot, Globe, RotateCcw } from "lucide-react";
+import { GameBackButton } from "@/components/ui/GameBackButton";
 import { useConnect4Store } from "../store";
 import { Connect4Board } from "./Board";
 import { Connect4OnlineGame } from "./Connect4OnlineGame";
@@ -64,9 +64,7 @@ export function Connect4Game() {
   if (screen === "menu") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Quay lại trang chủ
-        </Link>
+        <GameBackButton />
         <div className="w-full max-w-md text-center">
           <h1 className="font-display text-3xl font-bold text-foreground">Bốn quân</h1>
           <p className="mt-2 text-sm text-muted">Thả quân, ai nối được 4 quân (ngang/dọc/chéo) trước sẽ thắng.</p>
@@ -87,9 +85,7 @@ export function Connect4Game() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
       <div className="flex w-full max-w-[460px] items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground">
-          <ArrowLeft size={16} /> Trang chủ
-        </Link>
+        <GameBackButton />
         <button type="button" onClick={() => setScreen("menu")} className="text-sm text-muted transition hover:text-foreground">
           Đổi chế độ
         </button>
